@@ -11,7 +11,6 @@ import {
   Patch,
   Post,
 } from '@nestjs/common';
-import { CartService } from './cart.service';
 import { AddItemToCartDTO } from './dtos/add-item-to-cart.dto';
 import { UpdateCartItemDTO } from './dtos/update-cart-item.dto';
 
