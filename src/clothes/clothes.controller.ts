@@ -10,8 +10,6 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
-import { Session, SuperTokensAuthGuard } from 'supertokens-nestjs';
-import { SessionContainer } from 'supertokens-node/recipe/session';
 import { ClothesService } from './services/clothes.service';
 import { CreateClothesDTO } from './dto/create-clothes.dto';
 import { RolesGuard } from 'src/auth/guards/roles.guard';
@@ -28,8 +26,6 @@ import { DeleteImageDTO } from './dto/delete-image.dto';
 import { ClothesVariantsService } from './services/clothes-variants.service';
 import { ClothesImagesService } from './services/clothes-images.service';
 import { CreateDraftClothesDTO } from './dto/create-draft-clothes.dto';
-import { UserContext } from 'src/auth/helpers/user-context.helper';
-import { OptionalAuthGuard } from 'src/auth/guards/optional-auth.guard';
 
 @Controller('clothes')
 export class ClothesController {
@@ -40,7 +36,7 @@ export class ClothesController {
     private readonly storageService: StorageService,
   ) {}
 
-  @UseGuards(SuperTokensAuthGuard, RolesGuard)
+  @UseGuards(RolesGuard)
   @Roles(ROLES.ADMIN)
   @Post()
   async createClothes(
@@ -68,7 +64,7 @@ export class ClothesController {
     return { ...createdClothes, preSignedPuts };
   }
 
-  @UseGuards(SuperTokensAuthGuard, RolesGuard)
+  @UseGuards(RolesGuard)
   @Roles(ROLES.SELLER)
   @Post('quick-create')
   async createDraftClothes(
@@ -96,46 +92,37 @@ export class ClothesController {
     return { ...createdClothes, preSignedPuts };
   }
 
-  @UseGuards(OptionalAuthGuard)
   @Get()
-  async getAllClothes(@Session() session?: SessionContainer): Promise<any> {
-    const userContext = new UserContext(session);
-    const filters = await userContext.getClothesFilterOptions();
-    return this.clothesService.getAllClothes(filters);
+  async getAllClothes(): Promise<any> {
+    // this method should return different data based on the user's role:
+    // - if the user is an admin, return all clothes with all details
+    // - if the user is a seller, return only clothes that are not drafts (actually this should be discussed, maybe sellers should also see their own drafts?)
+    return this.clothesService.getAllClothes();
   }
 
-  @UseGuards(OptionalAuthGuard)
   @Get('search')
   async searchAndFilterClothes(
     @Query('name') name?: string,
     @Query('description') description?: string,
     @Query('size') size?: string,
     @Query('gender') gender?: string,
-    @Session() session?: SessionContainer,
   ): Promise<any> {
-    const userContext = new UserContext(session);
-    const filters = await userContext.getClothesFilterOptions();
     return this.clothesService.searchAndFilterClothes(
       name,
       description,
       size,
       gender,
-      filters,
     );
   }
 
-  @UseGuards(OptionalAuthGuard)
   @Get(':id')
   async getClothesById(
     @Param('id', ParseUUIDPipe) clothesId: string,
-    @Session() session?: SessionContainer,
   ): Promise<any> {
-    const userContext = new UserContext(session);
-    const filters = await userContext.getClothesFilterOptions();
-    return this.clothesService.getClothesById(clothesId, filters);
+    return this.clothesService.getClothesById(clothesId);
   }
 
-  @UseGuards(SuperTokensAuthGuard, RolesGuard)
+  @UseGuards(RolesGuard)
   @Roles(ROLES.ADMIN)
   @Patch(':id')
   async updateClothes(
@@ -145,7 +132,7 @@ export class ClothesController {
     return this.clothesService.updateClothes(clothesId, updateClothesDto);
   }
 
-  @UseGuards(SuperTokensAuthGuard, RolesGuard)
+  @UseGuards(RolesGuard)
   @Roles(ROLES.ADMIN)
   @Post(':id/variants')
   async addVariant(
@@ -158,7 +145,7 @@ export class ClothesController {
     );
   }
 
-  @UseGuards(SuperTokensAuthGuard, RolesGuard)
+  @UseGuards(RolesGuard)
   @Roles(ROLES.ADMIN)
   @Patch(':id/variants/:variantId')
   async updateVariant(
@@ -173,7 +160,7 @@ export class ClothesController {
     );
   }
 
-  @UseGuards(SuperTokensAuthGuard, RolesGuard)
+  @UseGuards(RolesGuard)
   @Roles(ROLES.ADMIN)
   @Delete(':id/variants/:variantId')
   async deleteVariant(
@@ -183,7 +170,7 @@ export class ClothesController {
     return this.clothesVariantService.deleteVariant(clothesId, variantId);
   }
 
-  @UseGuards(SuperTokensAuthGuard, RolesGuard)
+  @UseGuards(RolesGuard)
   @Roles(ROLES.ADMIN)
   @Post(':id/images')
   async addImages(
@@ -196,7 +183,7 @@ export class ClothesController {
     );
   }
 
-  @UseGuards(SuperTokensAuthGuard, RolesGuard)
+  @UseGuards(RolesGuard)
   @Roles(ROLES.ADMIN)
   @Delete(':id/images')
   async deleteImage(
