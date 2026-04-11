@@ -10,7 +10,6 @@ import {
 } from '@nestjs/common';
 import { OrderService } from './order.service';
 import { CreateOrderDTO } from './dtos/create-order.dto';
-import { SuperTokensAuthGuard } from 'supertokens-nestjs';
 import { RolesGuard } from 'src/auth/guards/roles.guard';
 import { Roles } from 'src/auth/decorators/roles.decorator';
 import { ROLES } from 'src/auth/constants/roles';
@@ -18,7 +17,7 @@ import { UpdateOrderDTO } from './dtos/update-order.dto';
 import { CancelOrderDTO } from './dtos/cancel-order.dto';
 
 @Roles(ROLES.SELLER)
-@UseGuards(SuperTokensAuthGuard, RolesGuard)
+@UseGuards(RolesGuard)
 @Controller('orders')
 export class OrderController {
   constructor(private readonly orderService: OrderService) {}
