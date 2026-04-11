@@ -2,6 +2,7 @@ import {
   BadRequestException,
   Injectable,
   NotFoundException,
+  NotImplementedException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { EmployeeEntity } from './entities/employee.entity';
@@ -10,7 +11,6 @@ import { CreateEmployeeDTO } from './dtos/create-employee.dto';
 import { UpdateEmployeeDTO } from './dtos/update-employee.dto';
 import { Logger } from '@nestjs/common';
 import { ROLES } from 'src/auth/constants/roles';
-import UserRoles from 'supertokens-node/recipe/userroles';
 
 @Injectable()
 export class EmployeeService {
@@ -18,7 +18,7 @@ export class EmployeeService {
   constructor(
     @InjectRepository(EmployeeEntity)
     private readonly employeeRepository: Repository<EmployeeEntity>,
-  ) {}
+  ) { }
 
   async getEmployee(id: string): Promise<EmployeeEntity> {
     const employee = await this.employeeRepository.findOneBy({ id });
@@ -28,37 +28,13 @@ export class EmployeeService {
     return employee;
   }
 
-  async getRolesForEmployee(superTokensUserId: string): Promise<string[]> {
-    try {
-      const roles = await UserRoles.getRolesForUser(
-        'public',
-        superTokensUserId,
-      );
-      if (roles.status !== 'OK') {
-        throw new BadRequestException('Could not fetch user roles');
-      }
-      return roles.roles;
-    } catch (error) {
-      this.logger.error('Error fetching user roles', error);
-      throw new BadRequestException('Error fetching user roles');
-    }
+  async getRolesForEmployee(id: string): Promise<string[]> {
+    throw new NotImplementedException('Not implemented yet');
   }
   async createEmployee(
     createEmployeDTO: CreateEmployeeDTO,
-    superTokensId: string,
   ): Promise<EmployeeEntity> {
-    try {
-      const employee: EmployeeEntity = this.employeeRepository.create({
-        ...createEmployeDTO,
-        superTokensId,
-      });
-      return await this.employeeRepository.save(employee);
-    } catch (error) {
-      if (error.code === '23505') {
-        throw new BadRequestException('Employee email already exists');
-      }
-      throw new BadRequestException('Could not create employee');
-    }
+    throw new NotImplementedException('Not implemented yet');
   }
 
   async updateEmployee(
@@ -93,38 +69,16 @@ export class EmployeeService {
     }
   }
 
-  async deleteEmployeeBySuperTokensId(
-    superTokensId: string,
-  ): Promise<{ message: string }> {
-    try {
-      const result = await this.employeeRepository.delete({ superTokensId });
-      if (result.affected !== 0) {
-        return { message: 'Employee deleted successfully' };
-      }
-    } catch (error) {
-      throw new BadRequestException(
-        'Error deleting employee or does not exist',
-      );
-    }
-  }
-
   async updateEmployeeRole(
     appUserId: string,
     role: ROLES,
   ): Promise<{ message: string }> {
-    const response = await UserRoles.addRoleToUser('public', appUserId, role);
-    if (response.status !== 'OK') {
-      throw new BadRequestException('Could not update user role');
-    }
-    return { message: `Role ${role} assigned to user ${appUserId}` };
+    throw new NotImplementedException('Not implemented yet');
   }
 
   async revokeEmployeeRole(appUserId: string, role: ROLES) {
-    const response = await UserRoles.removeUserRole('public', appUserId, role);
-    if (response.status !== 'OK') {
-      throw new BadRequestException('Could not revoke user role');
-    }
-    return { message: `Role ${role} revoked from user ${appUserId}` };
+    throw new NotImplementedException('Not implemented yet');
+
   }
 
   async getAllEmployees(): Promise<EmployeeEntity[]> {
