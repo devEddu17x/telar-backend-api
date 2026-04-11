@@ -14,7 +14,7 @@ export class CustomerService {
   constructor(
     @InjectRepository(CustomerEntity)
     private readonly customerRepository: Repository<CustomerEntity>,
-  ) {}
+  ) { }
   async createCustomer(customerDTO: CreateCustomerDTO) {
     const newCustomer = this.customerRepository.create(customerDTO);
     const createdUser = await this.customerRepository.save(newCustomer);
