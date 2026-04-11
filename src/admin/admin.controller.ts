@@ -10,14 +10,13 @@ import {
 } from '@nestjs/common';
 import { AdminService } from './admin.service';
 import { EmployeeRoleUpdateDTO } from './dtos/promote-employee.dto';
-import { SuperTokensAuthGuard } from 'supertokens-nestjs';
 import { ROLES } from 'src/auth/constants/roles';
 import { CreateEmployeeDTO } from 'src/employee/dtos/create-employee.dto';
 import { RolesGuard } from 'src/auth/guards/roles.guard';
 import { Roles } from 'src/auth/decorators/roles.decorator';
 
 @Roles(ROLES.ADMIN)
-@UseGuards(SuperTokensAuthGuard, RolesGuard)
+@UseGuards(RolesGuard)
 @Controller('admin')
 export class AdminController {
   constructor(private readonly adminService: AdminService) {}
