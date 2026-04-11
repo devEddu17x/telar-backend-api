@@ -11,7 +11,6 @@ import * as config from './env';
       ],
       isGlobal: true,
       load: [
-        config.supertokensConfig,
         config.typeormConfig,
         config.cookieConfig,
         config.apiConfig,
