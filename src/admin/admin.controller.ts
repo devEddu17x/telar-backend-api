@@ -51,8 +51,8 @@ export class AdminController {
     return await this.adminService.getAllEmployees();
   }
 
-  @Delete('employees/:superTokenId')
-  async deleteEmployee(@Param('superTokenId') id: string) {
+  @Delete('employees/:id')
+  async deleteEmployee(@Param('id') id: string) {
     return await this.adminService.deleteEmployee(id);
   }
 }
