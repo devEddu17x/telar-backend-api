@@ -124,7 +124,7 @@ refactor(utils): simplify date formatting function
 
 ## Available Commands
 
-- `docker compose up -d` - Starts database (api) and supertokens core containers
+- `docker compose up -d` - Starts database, grafana, and loki
 - `pnpm start:dev` - Start server in dev mode
 - `pnpm start:prod` - Start server in production mode
 

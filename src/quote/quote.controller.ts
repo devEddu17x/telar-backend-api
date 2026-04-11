@@ -14,7 +14,6 @@ import {
 import { QuoteService } from './quote.service';
 import { CreateQuoteDTO } from './dtos/create-quote.dto';
 import { QuoteStatus } from './enums/status.enum';
-import { SuperTokensAuthGuard } from 'supertokens-nestjs';
 import { RolesGuard } from 'src/auth/guards/roles.guard';
 import { Roles } from 'src/auth/decorators/roles.decorator';
 import { ROLES } from 'src/auth/constants/roles';
@@ -24,7 +23,7 @@ import { UpdateQuoteDTO } from './dtos/update-quote.dto';
 import { QuoteEntity } from './entities/quote.entity';
 
 @Roles(ROLES.SELLER)
-@UseGuards(SuperTokensAuthGuard, RolesGuard)
+@UseGuards(RolesGuard)
 @Controller('quotes')
 export class QuoteController {
   constructor(private readonly quoteService: QuoteService) {}

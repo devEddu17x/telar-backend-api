@@ -18,7 +18,7 @@ import { StorageService } from 'src/storage/storage.service';
 import { CreateDraftClothesDTO } from '../dto/create-draft-clothes.dto';
 import { CLOTHES_GENDER } from '../enum/gender.enum';
 import { CLOTHES_SIZES } from '../enum/size.enum';
-import { ClothesFilterOptions } from 'src/auth/helpers/user-context.helper';
+import { ClothesFilterOptions } from '../interfaces/filter-options.interface';
 
 @Injectable()
 export class ClothesService {
