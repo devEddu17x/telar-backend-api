@@ -25,9 +25,9 @@ export class AuthService {
         names: params.name,
         lastNames: params.lastName,
       };
-      const empployeeResult =
+      const employeeResult =
         await this.employeeService.createEmployee(employeDTO);
-      return { cognitoResult, empployeeResult };
+      return { cognitoResult, employeeResult };
     } catch (error) {
       await this.cognitoService.deleteUser(params.email);
       this.logger.error(
@@ -54,9 +54,9 @@ export class AuthService {
         names: params.name,
         lastNames: params.lastName,
       };
-      const empployeeResult =
+      const employeeResult =
         await this.employeeService.createEmployee(employeDTO);
-      return { cognitoResult, empployeeResult };
+      return { cognitoResult, employeeResult };
     } catch (error) {
       await this.cognitoService.deleteUser(params.email);
       this.logger.error(
