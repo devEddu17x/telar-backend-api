@@ -17,6 +17,7 @@ import * as config from './env';
         config.pinoLoggerConfig,
         config.cloudflare,
         config.emailConfig,
+        config.cognitoConfig,
       ],
     }),
   ],
