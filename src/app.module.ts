@@ -13,6 +13,7 @@ import { QuoteModule } from './quote/quote.module';
 import { OrderModule } from './order/order.module';
 import { CartModule } from './cart/cart.module';
 import { LoggerModule } from 'nestjs-pino';
+import { AuthModule } from './auth/auth.module';
 
 @Module({
   imports: [
@@ -28,6 +29,7 @@ import { LoggerModule } from 'nestjs-pino';
       },
       inject: [ConfigService],
     }),
+    AuthModule,
     ConfigModule,
     CustomerModule,
     EmployeeModule,
