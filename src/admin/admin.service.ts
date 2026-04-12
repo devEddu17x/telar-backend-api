@@ -24,8 +24,10 @@ export class AdminService {
       email: createEmployeeDTO.email,
       name: createEmployeeDTO.names,
       lastName: createEmployeeDTO.lastNames,
-    }
-    return await this.authService.createEmployee(employeeParams, ROLES.SELLER);
+    };
+
+    const { employeeResult } = await this.authService.createEmployee(employeeParams, ROLES.SELLER);
+    return employeeResult;
   }
 
   async updateEmployeeRole(email: string, role: ROLES) {
