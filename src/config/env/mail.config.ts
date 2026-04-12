@@ -11,7 +11,9 @@ export default registerAs('email', () => {
     ['EMAIL_PASS', EMAIL_PASS],
     ['EMAIL_FROM', EMAIL_FROM],
   ]
-    .filter(([, value]) => !value)
+    .filter(
+      ([, value]) => typeof value !== 'string' || value.trim().length === 0,
+    )
     .map(([name]) => name);
 
   if (missingVars.length) {
