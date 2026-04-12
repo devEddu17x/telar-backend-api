@@ -12,6 +12,7 @@ import { AddressEntity } from 'src/order/entities/address.entity';
 import { OrderEntity } from 'src/order/entities/order.entity';
 import { QuoteDetailEntity } from 'src/quote/entities/quote-detail.entity';
 import { QuoteEntity } from 'src/quote/entities/quote.entity';
+import { TenantEntity } from 'src/tenant/entities/tenant.entity';
 
 export default registerAs('typeorm', () => {
   const { DB_HOST, DB_PORT, DB_USERNAME, DB_PASSWORD, DB_NAME, DB_SSL } =
@@ -59,6 +60,7 @@ export default registerAs('typeorm', () => {
       AddressEntity,
       ShoppingCartEntity,
       ShoppingCartItemEntity,
+      TenantEntity,
     ],
     synchronize: process.env.NODE_ENV !== 'production',
     ssl:
