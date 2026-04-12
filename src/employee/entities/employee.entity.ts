@@ -29,7 +29,7 @@ export class EmployeeEntity {
   @Column({ type: 'uuid', nullable: true })
   tenantId?: string;
 
-  @ManyToOne(() => TenantEntity, { nullable: true, onDelete: 'RESTRICT' })
+  @ManyToOne(() => TenantEntity, { nullable: true, onDelete: 'SET NULL' })
   @JoinColumn({ name: 'tenantId' })
   tenant?: TenantEntity;
 
