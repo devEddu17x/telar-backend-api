@@ -11,13 +11,13 @@ export class EmployeeEntity {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ type: 'varchar', length: 100, nullable: false })
+  @Column({ type: 'varchar', length: 64, nullable: false })
   names: string;
 
-  @Column({ type: 'varchar', length: 100, nullable: false })
+  @Column({ type: 'varchar', length: 64, nullable: false })
   lastNames: string;
 
-  @Column({ type: 'varchar', length: 50, nullable: false, unique: true })
+  @Column({ type: 'varchar', length: 64, nullable: false, unique: true })
   email: string;
 
   @CreateDateColumn()
