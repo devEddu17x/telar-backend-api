@@ -2,6 +2,10 @@ import { IsEmail, IsNotEmpty, IsString, MaxLength } from 'class-validator';
 
 export class CreateEmployeeDTO {
   @IsString()
+  @IsNotEmpty()
+  sub: string;
+
+  @IsString()
   @IsEmail()
   @IsNotEmpty()
   @MaxLength(64)
