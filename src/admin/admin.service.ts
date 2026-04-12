@@ -3,9 +3,7 @@ import {
   NotImplementedException,
 } from '@nestjs/common';
 import { ROLES } from 'src/auth/constants/roles';
-import { EmployeeService } from 'src/employee/employee.service';
 import { CreateEmployeeDTO } from 'src/employee/dtos/create-employee.dto';
-import { EmployeeEntity } from 'src/employee/entities/employee.entity';
 import { EmployeeWithRoles } from 'src/employee/interfaces/employee-with-roles.interface';
 import { AuthService } from 'src/auth/services/auth.service';
 import { CognitoEmployeeParams } from 'src/auth/interfaces/cognito-user-interface';
@@ -13,7 +11,6 @@ import { CognitoEmployeeParams } from 'src/auth/interfaces/cognito-user-interfac
 @Injectable()
 export class AdminService {
   constructor(
-    private readonly employeeService: EmployeeService,
     private readonly authService: AuthService
   ) { }
   async getAllRoles() {
