@@ -14,6 +14,7 @@ import { OrderModule } from './order/order.module';
 import { CartModule } from './cart/cart.module';
 import { LoggerModule } from 'nestjs-pino';
 import { AuthModule } from './auth/auth.module';
+import { TenantModule } from './tenant/tenant.module';
 
 @Module({
   imports: [
@@ -39,6 +40,7 @@ import { AuthModule } from './auth/auth.module';
     QuoteModule,
     OrderModule,
     CartModule,
+    TenantModule,
   ],
 
   controllers: [AppController],
