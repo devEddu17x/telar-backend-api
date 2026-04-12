@@ -19,7 +19,7 @@ import { Roles } from 'src/auth/decorators/roles.decorator';
 @UseGuards(RolesGuard)
 @Controller('admin')
 export class AdminController {
-  constructor(private readonly adminService: AdminService) { }
+  constructor(private readonly adminService: AdminService) {}
   @Get('roles')
   async getAllRoles() {
     return await this.adminService.getAllRoles();
