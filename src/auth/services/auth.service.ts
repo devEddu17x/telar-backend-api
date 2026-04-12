@@ -27,9 +27,11 @@ export class AuthService {
         names: params.name,
         lastNames: params.lastName,
       };
-      const employeeResult =
-        await this.employeeService.createEmployee(sub, employeeDTO);
-      return { cognitoResult, employeeResult };
+      const employeeResult = await this.employeeService.createEmployee(
+        sub,
+        employeeDTO,
+      );
+      return employeeResult;
     } catch (error) {
       try {
         await this.cognitoService.deleteUser(params.email);
@@ -70,9 +72,11 @@ export class AuthService {
         lastNames: params.lastName,
       };
 
-      const employeeResult =
-        await this.employeeService.createEmployee(sub, employeDTO);
-      return { cognitoResult, employeeResult };
+      const employeeResult = await this.employeeService.createEmployee(
+        sub,
+        employeDTO,
+      );
+      return employeeResult;
     } catch (error) {
       try {
         await this.cognitoService.deleteUser(params.email);
