@@ -43,6 +43,10 @@ export class AuthService {
       throw new BadRequestException('Cannot assign OWNER role to an employee');
     }
 
+    const allowedRoles = [ROLES.ADMIN, ROLES.SELLER];
+    if (!allowedRoles.includes(role)) {
+      throw new BadRequestException(`Invalid role: ${role}`);
+    }
     const cognitoResult = await this.cognitoService.createEmployee(
       params,
       role,
