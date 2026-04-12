@@ -10,6 +10,7 @@ import { Repository } from 'typeorm/repository/Repository';
 import { CreateEmployeeDTO } from './dtos/create-employee.dto';
 import { UpdateEmployeeDTO } from './dtos/update-employee.dto';
 import { Logger } from '@nestjs/common';
+import { ROLES } from 'src/auth/constants/roles';
 
 @Injectable()
 export class EmployeeService {
@@ -17,7 +18,7 @@ export class EmployeeService {
   constructor(
     @InjectRepository(EmployeeEntity)
     private readonly employeeRepository: Repository<EmployeeEntity>,
-  ) {}
+  ) { }
 
   async createEmployee(
     createEmployeDTO: CreateEmployeeDTO,
@@ -79,13 +80,13 @@ export class EmployeeService {
     return employees;
   }
 
-  async updateEmployeeRole(): Promise<{ message: string }> {
+  async updateEmployeeRole(email: string, role: ROLES): Promise<{ message: string }> {
     throw new NotImplementedException('Not implemented yet');
   }
-  async getRolesForEmployee(): Promise<string[]> {
+  async getRolesForEmployee(email: string): Promise<string[]> {
     throw new NotImplementedException('Not implemented yet');
   }
-  async revokeEmployeeRole() {
+  async revokeEmployeeRole(email: string, role: ROLES) {
     throw new NotImplementedException('Not implemented yet');
   }
 }
