@@ -40,6 +40,23 @@ export class EmployeeService {
     return employee;
   }
 
+  async getEmployeeBySub(sub: string): Promise<EmployeeEntity> {
+    const employee = await this.employeeRepository.findOneBy({ sub });
+    if (!employee) {
+      this.logger.error(`Employee with sub ${sub} not found. Possible sync issue between Cognito and local DB.`);
+      throw new NotFoundException('Employee sub not found.');
+    }
+    return employee;
+  }
+
+  async assignTenantToEmployee(sub: string, tenantId: string): Promise<void> {
+    const result = await this.employeeRepository.update({ sub }, { tenantId });
+    if (result.affected === 0) {
+      this.logger.error(`Failed to assign tenantId ${tenantId} to employee with sub ${sub}.`);
+      throw new BadRequestException('Failed to assign tenant to employee.');
+    }
+  }
+
   async updateEmployee(
     id: string,
     updateEmployeeDTO: UpdateEmployeeDTO,
