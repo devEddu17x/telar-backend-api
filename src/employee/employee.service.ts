@@ -7,6 +7,7 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { EmployeeEntity } from './entities/employee.entity';
 import { Repository } from 'typeorm/repository/Repository';
+import { IsNull } from 'typeorm';
 import { CreateEmployeeDTO } from './dtos/create-employee.dto';
 import { UpdateEmployeeDTO } from './dtos/update-employee.dto';
 import { Logger } from '@nestjs/common';
@@ -21,10 +22,14 @@ export class EmployeeService {
   ) { }
 
   async createEmployee(
+    sub: string,
     createEmployeDTO: CreateEmployeeDTO,
   ): Promise<EmployeeEntity> {
     try {
-      const employee = this.employeeRepository.create(createEmployeDTO);
+      const employee = this.employeeRepository.create({
+        sub,
+        ...createEmployeDTO,
+      });
       return await this.employeeRepository.save(employee);
     } catch (error) {
       this.logger.error('Error creating employee', { cause: error });
@@ -38,6 +43,28 @@ export class EmployeeService {
       throw new NotFoundException('Employee not found');
     }
     return employee;
+  }
+
+  async getEmployeeBySub(sub: string): Promise<EmployeeEntity> {
+    const employee = await this.employeeRepository.findOneBy({ sub });
+    if (!employee) {
+      this.logger.error(
+        `Employee not found for sub ending with ${sub.slice(-6)}. Possible sync issue between Cognito and local DB.`,
+      );
+      throw new NotFoundException('Employee sub not found.');
+    }
+    return employee;
+  }
+
+  async assignTenantToEmployeeIfUnassigned(
+    sub: string,
+    tenantId: string
+  ): Promise<boolean> {
+    const result = await this.employeeRepository.update(
+      { sub, tenantId: IsNull() },
+      { tenantId }
+    );
+    return (result.affected ?? 0) > 0;
   }
 
   async updateEmployee(

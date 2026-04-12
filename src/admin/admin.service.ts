@@ -3,22 +3,31 @@ import {
   NotImplementedException,
 } from '@nestjs/common';
 import { ROLES } from 'src/auth/constants/roles';
-import { EmployeeService } from 'src/employee/employee.service';
 import { CreateEmployeeDTO } from 'src/employee/dtos/create-employee.dto';
-import { EmployeeEntity } from 'src/employee/entities/employee.entity';
 import { EmployeeWithRoles } from 'src/employee/interfaces/employee-with-roles.interface';
+import { AuthService } from 'src/auth/services/auth.service';
+import { CognitoEmployeeParams } from 'src/auth/interfaces/cognito-user-interface';
 
 @Injectable()
 export class AdminService {
-  constructor(private readonly employeeService: EmployeeService) { }
+  constructor(
+    private readonly authService: AuthService
+  ) { }
   async getAllRoles() {
     throw new NotImplementedException('Not implemented yet');
   }
 
   async createEmployee(
     createEmployeeDTO: CreateEmployeeDTO,
-  ): Promise<EmployeeEntity> {
-    throw new NotImplementedException('Not implemented yet');
+  ) {
+    const employeeParams: CognitoEmployeeParams = {
+      email: createEmployeeDTO.email,
+      name: createEmployeeDTO.names,
+      lastName: createEmployeeDTO.lastNames,
+    };
+
+    const { employeeResult } = await this.authService.createEmployee(employeeParams, ROLES.SELLER);
+    return employeeResult;
   }
 
   async updateEmployeeRole(email: string, role: ROLES) {

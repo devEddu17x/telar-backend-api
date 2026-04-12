@@ -13,6 +13,8 @@ import {
   AdminDeleteUserCommand,
   ConfirmSignUpCommand,
   ResendConfirmationCodeCommand,
+  AdminUpdateUserAttributesCommand,
+  AdminDeleteUserAttributesCommand,
 } from '@aws-sdk/client-cognito-identity-provider';
 import { ConfigService } from '@nestjs/config';
 import { ROLES } from '../constants/roles';
@@ -163,6 +165,29 @@ export class CognitoService {
     }
   }
 
+  async setTenantId(email: string, tenantId: string) {
+    try {
+      const command = new AdminUpdateUserAttributesCommand({
+        UserPoolId: this.userPoolId,
+        Username: email,
+        UserAttributes: [
+          {
+            Name: 'custom:tenant_id',
+            Value: tenantId,
+          },
+        ],
+      });
+      await this.cognitoClient.send(command);
+    } catch (error: any) {
+      this.logger.error(`Error updating custom:tenant_id for ${email}`, {
+        cause: error,
+      });
+      throw new InternalServerErrorException(
+        'Failed to link tenant to user account',
+      );
+    }
+  }
+
   async resendConfirmationCode(email: string) {
     try {
       const command = new ResendConfirmationCodeCommand({
@@ -179,6 +204,22 @@ export class CognitoService {
         `Cognito ResendConfirmationCode Error [${error.name}]: ${error.message}`,
       );
       throw new BadRequestException(`Failed to resend code`);
+    }
+  }
+
+  async clearTenantId(email: string) {
+    try {
+      const command = new AdminDeleteUserAttributesCommand({
+        UserPoolId: this.userPoolId,
+        Username: email,
+        UserAttributeNames: ['custom:tenant_id'],
+      });
+      await this.cognitoClient.send(command);
+    } catch (error: any) {
+      this.logger.error(
+        `Critical Rollback Failure: Could not clear custom:tenant_id for ${email}`,
+        { cause: error },
+      );
     }
   }
 }
