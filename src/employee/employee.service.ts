@@ -21,10 +21,14 @@ export class EmployeeService {
   ) { }
 
   async createEmployee(
+    sub: string,
     createEmployeDTO: CreateEmployeeDTO,
   ): Promise<EmployeeEntity> {
     try {
-      const employee = this.employeeRepository.create(createEmployeDTO);
+      const employee = this.employeeRepository.create({
+        sub,
+        ...createEmployeDTO,
+      });
       return await this.employeeRepository.save(employee);
     } catch (error) {
       this.logger.error('Error creating employee', { cause: error });
