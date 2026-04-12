@@ -47,7 +47,9 @@ export class EmployeeService {
   async getEmployeeBySub(sub: string): Promise<EmployeeEntity> {
     const employee = await this.employeeRepository.findOneBy({ sub });
     if (!employee) {
-      this.logger.error(`Employee with sub ${sub} not found. Possible sync issue between Cognito and local DB.`);
+      this.logger.error(
+        `Employee not found for sub ending with ${sub.slice(-6)}. Possible sync issue between Cognito and local DB.`,
+      );
       throw new NotFoundException('Employee sub not found.');
     }
     return employee;
@@ -56,7 +58,9 @@ export class EmployeeService {
   async assignTenantToEmployee(sub: string, tenantId: string): Promise<void> {
     const result = await this.employeeRepository.update({ sub }, { tenantId });
     if (result.affected === 0) {
-      this.logger.error(`Failed to assign tenantId ${tenantId} to employee with sub ${sub}.`);
+      this.logger.error(
+        `Failed to assign tenant to employee sub ending with ${sub.slice(-6)}.`,
+      );
       throw new BadRequestException('Failed to assign tenant to employee.');
     }
   }
