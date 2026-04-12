@@ -56,7 +56,10 @@ export class EmployeeService {
     return employee;
   }
 
-  async assignTenantToEmployeeIfUnassigned(sub: string, tenantId: string): Promise<boolean> {
+  async assignTenantToEmployeeIfUnassigned(
+    sub: string,
+    tenantId: string
+  ): Promise<boolean> {
     const result = await this.employeeRepository.update(
       { sub, tenantId: IsNull() },
       { tenantId }
