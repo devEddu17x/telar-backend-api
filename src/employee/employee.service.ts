@@ -27,8 +27,8 @@ export class EmployeeService {
       const employee = this.employeeRepository.create(createEmployeDTO);
       return await this.employeeRepository.save(employee);
     } catch (error) {
-      this.logger.error('Error creating employee', error);
-      throw new Error('Error creating employee');
+      this.logger.error('Error creating employee', { cause: error });
+      throw error;
     }
   }
 
