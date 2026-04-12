@@ -18,7 +18,9 @@ export default registerAs('cloudflare', () => {
     ['BASE_URL', BASE_URL],
     ['BASE_URL_IMAGES', BASE_URL_IMAGES],
   ]
-    .filter(([, value]) => !value)
+    .filter(
+      ([, value]) => typeof value !== 'string' || value.trim().length === 0,
+    )
     .map(([name]) => name);
 
   if (missingVars.length) {
