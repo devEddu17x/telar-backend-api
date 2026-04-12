@@ -2,6 +2,7 @@ import {
   Injectable,
   BadRequestException,
   InternalServerErrorException,
+  ConflictException,
   Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -41,13 +42,20 @@ export class TenantService {
       const tenant = this.tenantRepository.create(dto);
       savedTenant = await this.tenantRepository.save(tenant);
 
+      const rowsAffected =
+        await this.employeeService.assignTenantToEmployeeIfUnassigned(
+          userSub,
+          savedTenant.id,
+        );
+
+      if (!rowsAffected) {
+        throw new ConflictException(
+          'Tenant setup already completed or in progress for this user.',
+        );
+      }
+
       await this.cognitoService.setTenantId(userEmail, savedTenant.id);
       cognitoUpdated = true;
-
-      await this.employeeService.assignTenantToEmployee(
-        userSub,
-        savedTenant.id,
-      );
 
       return savedTenant;
     } catch (error) {
