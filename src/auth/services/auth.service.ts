@@ -29,12 +29,19 @@ export class AuthService {
         await this.employeeService.createEmployee(employeDTO);
       return { cognitoResult, employeeResult };
     } catch (error) {
-      await this.cognitoService.deleteUser(params.email);
+      try {
+        await this.cognitoService.deleteUser(params.email);
+      } catch (rollbackError) {
+        this.logger.error(
+          `Critical Rollback Failure: Could not delete user ${params.email} from Cognito after local DB failure.`,
+          { cause: rollbackError },
+        );
+      }
       this.logger.error(
-        'Error creating owner locally. Cognito user was rolled back.',
+        'Error creating owner locally. Cognito user was rolled back (if possible).',
         { cause: error },
       );
-      throw new BadRequestException('Could not create user');
+      throw new BadRequestException('Could not create user', { cause: error });
     }
   }
 
@@ -62,7 +69,14 @@ export class AuthService {
         await this.employeeService.createEmployee(employeDTO);
       return { cognitoResult, employeeResult };
     } catch (error) {
-      await this.cognitoService.deleteUser(params.email);
+      try {
+        await this.cognitoService.deleteUser(params.email);
+      } catch (rollbackError) {
+        this.logger.error(
+          `Critical Rollback Failure: Could not delete user ${params.email} from Cognito after local DB failure.`,
+          { cause: rollbackError },
+        );
+      }
       this.logger.error(
         'Error creating employee locally. Cognito user was rolled back.',
         { cause: error },
