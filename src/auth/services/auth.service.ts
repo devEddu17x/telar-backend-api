@@ -1,6 +1,9 @@
 import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { CognitoService } from './cognito.service';
-import { CognitoUserParams } from '../interfaces/cognito-user-interface';
+import {
+  CognitoOwnerParams,
+  CognitoEmployeeParams,
+} from '../interfaces/cognito-user-interface';
 import { ROLES } from '../constants/roles';
 import { EmployeeService } from 'src/employee/employee.service';
 import { CreateEmployeeDTO } from 'src/employee/dtos/create-employee.dto';
@@ -13,7 +16,7 @@ export class AuthService {
     private readonly employeeService: EmployeeService,
   ) {}
 
-  async createOwner(params: CognitoUserParams) {
+  async createOwner(params: CognitoOwnerParams) {
     const cognitoResult = await this.cognitoService.createOwner(params);
 
     try {
@@ -35,7 +38,7 @@ export class AuthService {
     }
   }
 
-  async createEmployee(params: CognitoUserParams, role: ROLES) {
+  async createEmployee(params: CognitoEmployeeParams, role: ROLES) {
     if (role === ROLES.OWNER) {
       throw new BadRequestException('Cannot assign OWNER role to an employee');
     }
