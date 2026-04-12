@@ -7,6 +7,7 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { EmployeeEntity } from './entities/employee.entity';
 import { Repository } from 'typeorm/repository/Repository';
+import { IsNull } from 'typeorm';
 import { CreateEmployeeDTO } from './dtos/create-employee.dto';
 import { UpdateEmployeeDTO } from './dtos/update-employee.dto';
 import { Logger } from '@nestjs/common';
@@ -55,14 +56,12 @@ export class EmployeeService {
     return employee;
   }
 
-  async assignTenantToEmployee(sub: string, tenantId: string): Promise<void> {
-    const result = await this.employeeRepository.update({ sub }, { tenantId });
-    if (result.affected === 0) {
-      this.logger.error(
-        `Failed to assign tenant to employee sub ending with ${sub.slice(-6)}.`,
-      );
-      throw new BadRequestException('Failed to assign tenant to employee.');
-    }
+  async assignTenantToEmployeeIfUnassigned(sub: string, tenantId: string): Promise<boolean> {
+    const result = await this.employeeRepository.update(
+      { sub, tenantId: IsNull() },
+      { tenantId }
+    );
+    return (result.affected ?? 0) > 0;
   }
 
   async updateEmployee(
