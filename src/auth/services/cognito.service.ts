@@ -116,10 +116,22 @@ export class CognitoService {
         Username: email,
       });
       await this.cognitoClient.send(command);
-    } catch (error) {
-      this.logger.error(`Failed to rollback/delete user in Cognito: ${email}`, {
-        cause: error,
-      });
+    } catch (error: any) {
+      if (error.name === 'UserNotFoundException') {
+        return;
+      }
+      const [localPart, domain] = email.split('@');
+      const maskedEmail = `${localPart.substring(0, 2)}***@${domain || ''}`;
+
+      this.logger.error(
+        `Failed to rollback/delete user in Cognito: ${maskedEmail}`,
+        {
+          cause: error,
+        },
+      );
+      throw new InternalServerErrorException(
+        `Rollback failed for user: ${maskedEmail}`,
+      );
     }
   }
 
