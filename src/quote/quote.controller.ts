@@ -40,7 +40,6 @@ export class QuoteController {
     if (!status) {
       return this.quoteService.getAll();
     }
-    // Validar que sea un valor válido del enum
     if (!Object.values(QuoteStatus).includes(status)) {
       throw new BadRequestException(
         `Invalid status. Valid values: ${Object.values(QuoteStatus).join(', ')}`,
