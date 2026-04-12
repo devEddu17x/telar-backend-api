@@ -67,9 +67,7 @@ export class CognitoService {
         this.logger.error(`Fault: ${error.$fault}, Stack: ${error.stack}`);
       }
 
-      throw new InternalServerErrorException(
-        `Cognito failed: ${error.message}`,
-      );
+      throw new InternalServerErrorException(`Could not create user`);
     }
   }
 
@@ -165,7 +163,10 @@ export class CognitoService {
         message: 'A new verification code has been sent to your email.',
       };
     } catch (error: any) {
-      throw new BadRequestException(`Failed to resend code: ${error.message}`);
+      this.logger.error(
+        `Cognito ResendConfirmationCode Error [${error.name}]: ${error.message}`,
+      );
+      throw new BadRequestException(`Failed to resend code`);
     }
   }
 }
