@@ -14,7 +14,7 @@ export class AuthService {
   constructor(
     private readonly cognitoService: CognitoService,
     private readonly employeeService: EmployeeService,
-  ) {}
+  ) { }
 
   async createOwner(params: CognitoOwnerParams) {
     const cognitoResult = await this.cognitoService.createOwner(params);
@@ -76,7 +76,7 @@ export class AuthService {
         sub,
         employeDTO,
       );
-      return { cognitoResult, employeeResult };
+      return employeeResult;
     } catch (error) {
       try {
         await this.cognitoService.deleteUser(params.email);
