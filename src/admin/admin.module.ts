@@ -9,4 +9,4 @@ import { AuthModule } from 'src/auth/auth.module';
   controllers: [AdminController],
   providers: [AdminService],
 })
-export class AdminModule { }
+export class AdminModule {}
