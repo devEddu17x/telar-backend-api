@@ -20,13 +20,16 @@ export class AuthService {
     const cognitoResult = await this.cognitoService.createOwner(params);
 
     try {
-      const employeDTO: CreateEmployeeDTO = {
+      const sub = cognitoResult.user.UserSub;
+
+      const employeeDTO: CreateEmployeeDTO = {
+        sub: sub,
         email: params.email,
         names: params.name,
         lastNames: params.lastName,
       };
       const employeeResult =
-        await this.employeeService.createEmployee(employeDTO);
+        await this.employeeService.createEmployee(employeeDTO);
       return { cognitoResult, employeeResult };
     } catch (error) {
       try {
@@ -59,12 +62,16 @@ export class AuthService {
       role,
     );
 
+    const sub = cognitoResult.user?.User?.Username;
+
     try {
       const employeDTO: CreateEmployeeDTO = {
+        sub: sub,
         email: params.email,
         names: params.name,
         lastNames: params.lastName,
       };
+
       const employeeResult =
         await this.employeeService.createEmployee(employeDTO);
       return { cognitoResult, employeeResult };
