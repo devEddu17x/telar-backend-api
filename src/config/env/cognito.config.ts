@@ -12,7 +12,9 @@ export default registerAs('cognito', () => {
     ['AWS_COGNITO_REGION', AWS_COGNITO_REGION],
     ['AWS_COGNITO_CLIENT_ID', AWS_COGNITO_CLIENT_ID],
   ]
-    .filter(([, value]) => !value)
+    .filter(
+      ([, value]) => typeof value !== 'string' || value.trim().length === 0,
+    )
     .map(([name]) => name);
 
   if (missingVars.length) {
