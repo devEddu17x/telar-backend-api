@@ -16,7 +16,10 @@ import {
 } from '@aws-sdk/client-cognito-identity-provider';
 import { ConfigService } from '@nestjs/config';
 import { ROLES } from '../constants/roles';
-import { CognitoUserParams } from '../interfaces/cognito-user-interface';
+import {
+  CognitoOwnerParams,
+  CognitoEmployeeParams,
+} from '../interfaces/cognito-user-interface';
 @Injectable()
 export class CognitoService {
   private readonly logger = new Logger(CognitoService.name);
@@ -31,7 +34,7 @@ export class CognitoService {
     this.clientId = this.configService.get<string>('cognito.clientId');
   }
 
-  async createOwner(params: CognitoUserParams) {
+  async createOwner(params: CognitoOwnerParams) {
     try {
       const signUpCommand = new SignUpCommand({
         ClientId: this.clientId,
@@ -70,7 +73,7 @@ export class CognitoService {
     }
   }
 
-  async createEmployee(params: CognitoUserParams, role: ROLES) {
+  async createEmployee(params: CognitoEmployeeParams, role: ROLES) {
     try {
       const commandInput: any = {
         UserPoolId: this.userPoolId,
