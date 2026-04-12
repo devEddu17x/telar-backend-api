@@ -23,7 +23,9 @@ export default registerAs('typeorm', () => {
     ['DB_USERNAME', DB_USERNAME],
     ['DB_NAME', DB_NAME],
   ]
-    .filter(([, value]) => !value)
+    .filter(
+      ([, value]) => typeof value !== 'string' || value.trim().length === 0,
+    )
     .map(([name]) => name);
 
   if (missingVars.length) {
