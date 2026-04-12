@@ -1,4 +1,12 @@
-import { Body, Controller, Post, Get, Param, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Post,
+  Get,
+  Param,
+  UseGuards,
+  ForbiddenException,
+} from '@nestjs/common';
 import { TenantService } from './tenant.service';
 import { CreateTenantDto } from './dtos/create-tenant.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -22,7 +30,12 @@ export class TenantController {
   }
 
   @Get(':id')
-  async getTenant(@Param('id') id: string) {
+  async getTenant(@Param('id') id: string, @CurrentUser() user: any) {
+    if (user.tenantId !== id) {
+      throw new ForbiddenException(
+        'You can only access your own tenant information',
+      );
+    }
     return this.tenantService.getTenantById(id);
   }
 }
