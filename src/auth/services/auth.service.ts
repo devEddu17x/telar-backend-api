@@ -14,7 +14,7 @@ export class AuthService {
   constructor(
     private readonly cognitoService: CognitoService,
     private readonly employeeService: EmployeeService,
-  ) {}
+  ) { }
 
   async createOwner(params: CognitoOwnerParams) {
     const cognitoResult = await this.cognitoService.createOwner(params);
@@ -23,13 +23,12 @@ export class AuthService {
       const sub = cognitoResult.user.UserSub;
 
       const employeeDTO: CreateEmployeeDTO = {
-        sub: sub,
         email: params.email,
         names: params.name,
         lastNames: params.lastName,
       };
       const employeeResult =
-        await this.employeeService.createEmployee(employeeDTO);
+        await this.employeeService.createEmployee(sub, employeeDTO);
       return { cognitoResult, employeeResult };
     } catch (error) {
       try {
@@ -66,14 +65,13 @@ export class AuthService {
 
     try {
       const employeDTO: CreateEmployeeDTO = {
-        sub: sub,
         email: params.email,
         names: params.name,
         lastNames: params.lastName,
       };
 
       const employeeResult =
-        await this.employeeService.createEmployee(employeDTO);
+        await this.employeeService.createEmployee(sub, employeDTO);
       return { cognitoResult, employeeResult };
     } catch (error) {
       try {

@@ -7,18 +7,28 @@ import { EmployeeService } from 'src/employee/employee.service';
 import { CreateEmployeeDTO } from 'src/employee/dtos/create-employee.dto';
 import { EmployeeEntity } from 'src/employee/entities/employee.entity';
 import { EmployeeWithRoles } from 'src/employee/interfaces/employee-with-roles.interface';
+import { AuthService } from 'src/auth/services/auth.service';
+import { CognitoEmployeeParams } from 'src/auth/interfaces/cognito-user-interface';
 
 @Injectable()
 export class AdminService {
-  constructor(private readonly employeeService: EmployeeService) { }
+  constructor(
+    private readonly employeeService: EmployeeService,
+    private readonly authService: AuthService
+  ) { }
   async getAllRoles() {
     throw new NotImplementedException('Not implemented yet');
   }
 
   async createEmployee(
     createEmployeeDTO: CreateEmployeeDTO,
-  ): Promise<EmployeeEntity> {
-    throw new NotImplementedException('Not implemented yet');
+  ) {
+    const employeeParams: CognitoEmployeeParams = {
+      email: createEmployeeDTO.email,
+      name: createEmployeeDTO.names,
+      lastName: createEmployeeDTO.lastNames,
+    }
+    return await this.authService.createEmployee(employeeParams, ROLES.SELLER);
   }
 
   async updateEmployeeRole(email: string, role: ROLES) {
