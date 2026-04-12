@@ -10,7 +10,6 @@ import { Repository } from 'typeorm/repository/Repository';
 import { CreateEmployeeDTO } from './dtos/create-employee.dto';
 import { UpdateEmployeeDTO } from './dtos/update-employee.dto';
 import { Logger } from '@nestjs/common';
-import { ROLES } from 'src/auth/constants/roles';
 
 @Injectable()
 export class EmployeeService {
@@ -18,7 +17,19 @@ export class EmployeeService {
   constructor(
     @InjectRepository(EmployeeEntity)
     private readonly employeeRepository: Repository<EmployeeEntity>,
-  ) { }
+  ) {}
+
+  async createEmployee(
+    createEmployeDTO: CreateEmployeeDTO,
+  ): Promise<EmployeeEntity> {
+    try {
+      const employee = this.employeeRepository.create(createEmployeDTO);
+      return await this.employeeRepository.save(employee);
+    } catch (error) {
+      this.logger.error('Error creating employee', error);
+      throw new Error('Error creating employee');
+    }
+  }
 
   async getEmployee(id: string): Promise<EmployeeEntity> {
     const employee = await this.employeeRepository.findOneBy({ id });
@@ -26,15 +37,6 @@ export class EmployeeService {
       throw new NotFoundException('Employee not found');
     }
     return employee;
-  }
-
-  async getRolesForEmployee(id: string): Promise<string[]> {
-    throw new NotImplementedException('Not implemented yet');
-  }
-  async createEmployee(
-    createEmployeDTO: CreateEmployeeDTO,
-  ): Promise<EmployeeEntity> {
-    throw new NotImplementedException('Not implemented yet');
   }
 
   async updateEmployee(
@@ -69,23 +71,21 @@ export class EmployeeService {
     }
   }
 
-  async updateEmployeeRole(
-    appUserId: string,
-    role: ROLES,
-  ): Promise<{ message: string }> {
-    throw new NotImplementedException('Not implemented yet');
-  }
-
-  async revokeEmployeeRole(appUserId: string, role: ROLES) {
-    throw new NotImplementedException('Not implemented yet');
-
-  }
-
   async getAllEmployees(): Promise<EmployeeEntity[]> {
     const employees = await this.employeeRepository.find();
     if (!employees || employees.length === 0) {
       throw new NotFoundException('No employees found');
     }
     return employees;
+  }
+
+  async updateEmployeeRole(): Promise<{ message: string }> {
+    throw new NotImplementedException('Not implemented yet');
+  }
+  async getRolesForEmployee(): Promise<string[]> {
+    throw new NotImplementedException('Not implemented yet');
+  }
+  async revokeEmployeeRole() {
+    throw new NotImplementedException('Not implemented yet');
   }
 }
