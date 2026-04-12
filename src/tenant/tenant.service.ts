@@ -4,6 +4,7 @@ import {
   InternalServerErrorException,
   ConflictException,
   Logger,
+  NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -83,7 +84,7 @@ export class TenantService {
   async getTenantById(id: string): Promise<TenantEntity> {
     const tenant = await this.tenantRepository.findOne({ where: { id } });
     if (!tenant) {
-      throw new BadRequestException('Tenant not found');
+      throw new NotFoundException('Tenant not found');
     }
     return tenant;
   }
