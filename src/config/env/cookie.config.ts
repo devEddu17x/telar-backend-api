@@ -4,7 +4,6 @@ export default registerAs('cookie', () => {
   const { COOKIE_DOMAIN, COOKIE_SAME_SITE, COOKIE_SECURE, NODE_ENV } =
     process.env;
   const missingVars = [
-    ['COOKIE_DOMAIN', COOKIE_DOMAIN],
     ['COOKIE_SAME_SITE', COOKIE_SAME_SITE],
     ['COOKIE_SECURE', COOKIE_SECURE],
     ['NODE_ENV', NODE_ENV],
