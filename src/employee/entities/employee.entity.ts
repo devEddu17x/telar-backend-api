@@ -26,9 +26,6 @@ export class EmployeeEntity {
   @Column({ type: 'varchar', length: 64, nullable: false, unique: true })
   email: string;
 
-  @Column({ type: 'boolean', default: true })
-  isActive: boolean;
-
   @Column({ type: 'uuid', nullable: true })
   tenantId?: string;
 
