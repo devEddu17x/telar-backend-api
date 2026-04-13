@@ -28,7 +28,12 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   }
 
   async validate(payload: any) {
-    const { sub, email, 'custom:tenant_id': tenantId } = payload;
+    const {
+      sub,
+      email,
+      'custom:tenant_id': tenantId,
+      'cognito:groups': roles,
+    } = payload;
 
     if (!sub || !email) {
       throw new UnauthorizedException('Invalid token claims');
@@ -37,6 +42,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       sub,
       email,
       tenantId: tenantId || null,
+      roles: roles || [],
     };
   }
 }
