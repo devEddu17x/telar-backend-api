@@ -12,13 +12,14 @@ import { CognitoEmployeeParams } from 'src/auth/interfaces/cognito-user-interfac
 export class AdminService {
   constructor(
     private readonly authService: AuthService
-  ) {}
+  ) { }
   async getAllRoles() {
     throw new NotImplementedException('Not implemented yet');
   }
 
   async createEmployee(
     createEmployeeDTO: CreateEmployeeDTO,
+    creatorTenantId: string,
   ) {
     const employeeParams: CognitoEmployeeParams = {
       email: createEmployeeDTO.email,
@@ -26,7 +27,11 @@ export class AdminService {
       lastName: createEmployeeDTO.lastNames,
     };
 
-    return await this.authService.createEmployee(employeeParams, ROLES.SELLER);
+    return await this.authService.createEmployee(
+      employeeParams,
+      createEmployeeDTO.role,
+      creatorTenantId,
+    );
   }
 
   async updateEmployeeRole(email: string, role: ROLES) {
