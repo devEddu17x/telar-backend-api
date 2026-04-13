@@ -2,17 +2,23 @@ import {
   Injectable,
   NotImplementedException,
   ForbiddenException,
+  InternalServerErrorException,
+  Logger,
 } from '@nestjs/common';
 import { ROLES, CREATABLE_ROLES } from 'src/auth/constants/roles';
 import { CreateEmployeeDTO } from 'src/employee/dtos/create-employee.dto';
 import { EmployeeWithRoles } from 'src/employee/interfaces/employee-with-roles.interface';
 import { AuthService } from 'src/auth/services/auth.service';
+import { EmployeeService } from 'src/employee/employee.service';
 import { CognitoEmployeeParams } from 'src/auth/interfaces/cognito-user-interface';
+import { maskEmail } from 'src/utils/mask-email.util';
 
 @Injectable()
 export class AdminService {
+  private readonly logger = new Logger(AdminService.name);
   constructor(
-    private readonly authService: AuthService
+    private readonly authService: AuthService,
+    private readonly employeeService: EmployeeService,
   ) {}
   async getAllRoles() {
     throw new NotImplementedException('Not implemented yet');
@@ -28,7 +34,7 @@ export class AdminService {
       !callerRoles.includes(ROLES.OWNER)
     ) {
       throw new ForbiddenException(
-        'Only an owner can create an admin employee.'
+        'Only an owner can create an admin employee.',
       );
     }
 
@@ -45,19 +51,131 @@ export class AdminService {
     );
   }
 
-  async updateEmployeeRole(email: string, role: ROLES) {
-    throw new NotImplementedException('Not implemented yet');
-  }
+  // async updateEmployeeRole(email: string, role: ROLES) {
+  //   throw new NotImplementedException('Not implemented yet');
+  // }
 
-  async revokeEmployeeRole(email: string, role: ROLES) {
-    throw new NotImplementedException('Not implemented yet');
-  }
+  // async revokeEmployeeRole(email: string, role: ROLES) {
+  //   throw new NotImplementedException('Not implemented yet');
+  // }
 
   async getAllEmployees(): Promise<EmployeeWithRoles[]> {
     throw new NotImplementedException('Not implemented yet');
   }
 
-  async deleteEmployee(email: string): Promise<{ message: string }> {
-    throw new NotImplementedException('Not implemented yet');
+  async deleteEmployee(
+    id: string,
+    tenantId: string,
+    callerRoles: string[],
+    callerEmail: string,
+  ): Promise<{ message: string }> {
+    const employee = await this.employeeService.getEmployee(id);
+
+    if (employee.tenantId !== tenantId) {
+      throw new ForbiddenException(
+        'You cannot delete an employee outside of your organization.',
+      );
+    }
+
+    if (employee.email === callerEmail) {
+      throw new ForbiddenException('You cannot disable your own account.');
+    }
+
+    const targetRoles = await this.authService.getUserRoles(employee.email);
+
+    if (targetRoles.includes(ROLES.OWNER)) {
+      throw new ForbiddenException('The owner account cannot be disabled.');
+    }
+
+    if (
+      !callerRoles.includes(ROLES.OWNER) &&
+      callerRoles.includes(ROLES.ADMIN) &&
+      targetRoles.includes(ROLES.ADMIN)
+    ) {
+      throw new ForbiddenException(
+        'An administrator cannot disable another administrator.',
+      );
+    }
+
+    await this.authService.disableUser(employee.email);
+
+    try {
+      await this.employeeService.updateEmployee(id, { isActive: false } as any);
+    } catch (error) {
+      this.logger.error(
+        `Failed to disable employee locally, rolling back Cognito state for ${maskEmail(employee.email)}`,
+        error,
+      );
+      try {
+        await this.authService.enableUser(employee.email);
+      } catch (rollbackError) {
+        this.logger.error(
+          `CRITICAL: Failed to rollback Cognito state for ${maskEmail(employee.email)}`,
+          rollbackError,
+        );
+      }
+      throw new InternalServerErrorException(
+        'An error occurred during disable operation.',
+      );
+    }
+
+    return { message: 'Employee has been disabled successfully' };
+  }
+
+  async reactivateEmployee(
+    id: string,
+    tenantId: string,
+    callerRoles: string[],
+    callerEmail: string,
+  ): Promise<{ message: string }> {
+    const employee = await this.employeeService.getEmployee(id);
+
+    if (employee.tenantId !== tenantId) {
+      throw new ForbiddenException(
+        'You cannot reactivate an employee outside of your organization.',
+      );
+    }
+
+    if (employee.email === callerEmail) {
+      throw new ForbiddenException(
+        'You cannot modify your own profile this way.',
+      );
+    }
+
+    const targetRoles = await this.authService.getUserRoles(employee.email);
+
+    if (
+      !callerRoles.includes(ROLES.OWNER) &&
+      callerRoles.includes(ROLES.ADMIN) &&
+      targetRoles.includes(ROLES.ADMIN)
+    ) {
+      throw new ForbiddenException(
+        'An administrator cannot reactivate another administrator.',
+      );
+    }
+
+    await this.authService.enableUser(employee.email);
+
+    try {
+      await this.employeeService.updateEmployee(id, { isActive: true } as any);
+    } catch (error) {
+      this.logger.error(
+        `Failed to reactivate employee locally, rolling back Cognito state for ${maskEmail(employee.email)}`,
+        error,
+      );
+      try {
+        await this.authService.disableUser(employee.email);
+      } catch (rollbackError) {
+        this.logger.error(
+          `CRITICAL: Failed to rollback Cognito state for ${maskEmail(employee.email)}`,
+          rollbackError,
+        );
+      }
+      throw new InternalServerErrorException(
+        'An error occurred during reactivation.',
+      );
+    }
+
+    return { message: 'Employee has been reactivated successfully' };
   }
 }
