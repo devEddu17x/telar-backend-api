@@ -17,7 +17,7 @@ import {
   AdminDeleteUserAttributesCommand,
 } from '@aws-sdk/client-cognito-identity-provider';
 import { ConfigService } from '@nestjs/config';
-import { ROLES } from '../constants/roles';
+import { CREATABLE_ROLES, ROLES } from '../constants/roles';
 import {
   CognitoOwnerParams,
   CognitoEmployeeParams,
@@ -73,7 +73,11 @@ export class CognitoService {
     }
   }
 
-  async createEmployee(params: CognitoEmployeeParams, role: ROLES) {
+  async createEmployee(
+    params: CognitoEmployeeParams,
+    role: CREATABLE_ROLES,
+    tenantId: string,
+  ) {
     try {
       const commandInput: any = {
         UserPoolId: this.userPoolId,
@@ -83,6 +87,7 @@ export class CognitoService {
           { Name: 'email_verified', Value: 'true' },
           { Name: 'name', Value: params.name },
           { Name: 'family_name', Value: params.lastName },
+          { Name: 'custom:tenant_id', Value: tenantId },
         ],
         DesiredDeliveryMediums: ['EMAIL'],
       };
