@@ -19,6 +19,7 @@ import {
   AdminUpdateUserAttributesCommand,
   AdminDeleteUserAttributesCommand,
   AdminListGroupsForUserCommand,
+  AdminRemoveUserFromGroupCommand,
 } from '@aws-sdk/client-cognito-identity-provider';
 import { ConfigService } from '@nestjs/config';
 import { CREATABLE_ROLES, ROLES } from '../constants/roles';
@@ -139,6 +140,48 @@ export class CognitoService {
         error.stack,
       );
       throw new InternalServerErrorException('Could not fetch user roles');
+    }
+  }
+
+  async addRole(email: string, role: string) {
+    try {
+      const command = new AdminAddUserToGroupCommand({
+        UserPoolId: this.userPoolId,
+        Username: email,
+        GroupName: role,
+      });
+      await this.cognitoClient.send(command);
+    } catch (error: any) {
+      if (error.name === 'UserNotFoundException')
+        throw new NotFoundException('User does not exist');
+      if (error.name === 'ResourceNotFoundException')
+        throw new BadRequestException(`Role ${role} does not exist`);
+      this.logger.error(
+        `Failed to assign role ${role} to user ${maskEmail(email)}`,
+        error.stack,
+      );
+      throw new InternalServerErrorException('Could not assign role');
+    }
+  }
+
+  async removeRole(email: string, role: string) {
+    try {
+      const command = new AdminRemoveUserFromGroupCommand({
+        UserPoolId: this.userPoolId,
+        Username: email,
+        GroupName: role,
+      });
+      await this.cognitoClient.send(command);
+    } catch (error: any) {
+      if (error.name === 'UserNotFoundException')
+        throw new NotFoundException('User does not exist');
+      if (error.name === 'UserNotInGroupException')
+        throw new BadRequestException(`User does not have role ${role}`);
+      this.logger.error(
+        `Failed to revoke role ${role} from user ${maskEmail(email)}`,
+        error.stack,
+      );
+      throw new InternalServerErrorException('Could not revoke role');
     }
   }
 
