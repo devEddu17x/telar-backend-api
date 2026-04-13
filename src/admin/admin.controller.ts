@@ -4,10 +4,12 @@ import {
   Delete,
   Get,
   Param,
+  Patch,
   Post,
   UseGuards,
 } from '@nestjs/common';
 import { AdminService } from './admin.service';
+import { EmployeeRoleUpdateDTO } from './dtos/promote-employee.dto';
 import { ROLES } from 'src/auth/constants/roles';
 import { CreateEmployeeDTO } from 'src/employee/dtos/create-employee.dto';
 import { RolesGuard } from 'src/auth/guards/roles.guard';
@@ -26,21 +28,21 @@ export class AdminController {
     return await this.adminService.getAllRoles();
   }
 
-  // @Patch('employees/promote')
-  // async promoteEmployeeRole(@Body() roleUpdate: EmployeeRoleUpdateDTO) {
-  //   return await this.adminService.updateEmployeeRole(
-  //     roleUpdate.email,
-  //     roleUpdate.role,
-  //   );
-  // }
+  @Patch('employees/promote')
+  async promoteEmployeeRole(@Body() roleUpdate: EmployeeRoleUpdateDTO) {
+    return await this.adminService.updateEmployeeRole(
+      roleUpdate.email,
+      roleUpdate.role,
+    );
+  }
 
-  // @Patch('employees/revoke')
-  // async revokeEmployeeRole(@Body() roleUpdate: EmployeeRoleUpdateDTO) {
-  //   return await this.adminService.revokeEmployeeRole(
-  //     roleUpdate.email,
-  //     roleUpdate.role,
-  //   );
-  // }
+  @Patch('employees/revoke')
+  async revokeEmployeeRole(@Body() roleUpdate: EmployeeRoleUpdateDTO) {
+    return await this.adminService.revokeEmployeeRole(
+      roleUpdate.email,
+      roleUpdate.role,
+    );
+  }
 
   @Post('employees')
   async createEmployee(
@@ -60,22 +62,7 @@ export class AdminController {
   }
 
   @Delete('employees/:id')
-  async deleteEmployee(@Param('id') id: string, @CurrentUser() user: any) {
-    return await this.adminService.deleteEmployee(
-      id,
-      user.tenantId,
-      user.roles,
-      user.email,
-    );
-  }
-
-  @Post('employees/:id/reactivate')
-  async reactivateEmployee(@Param('id') id: string, @CurrentUser() user: any) {
-    return await this.adminService.reactivateEmployee(
-      id,
-      user.tenantId,
-      user.roles,
-      user.email,
-    );
+  async deleteEmployee(@Param('id') id: string) {
+    return await this.adminService.deleteEmployee(id);
   }
 }
