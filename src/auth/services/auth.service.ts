@@ -6,6 +6,7 @@ import {
 } from '../interfaces/cognito-user-interface';
 import { CREATABLE_ROLES } from '../constants/roles';
 import { EmployeeService } from 'src/employee/employee.service';
+import { maskEmail } from '../../utils/mask-email.util';
 
 @Injectable()
 export class AuthService {
@@ -14,12 +15,6 @@ export class AuthService {
     private readonly cognitoService: CognitoService,
     private readonly employeeService: EmployeeService,
   ) {}
-
-  private maskEmail(email: string): string {
-    if (!email) return '';
-    const [localPart, domain] = email.split('@');
-    return `${localPart.substring(0, 2)}***@${domain || ''}`;
-  }
 
   async createOwner(params: CognitoOwnerParams) {
     const cognitoResult = await this.cognitoService.createOwner(params);
@@ -42,7 +37,7 @@ export class AuthService {
         await this.cognitoService.deleteUser(params.email);
       } catch (rollbackError) {
         this.logger.error(
-          `Critical Rollback Failure: Could not delete user ${this.maskEmail(params.email)} from Cognito after local DB failure.`,
+          `Critical Rollback Failure: Could not delete user ${maskEmail(params.email)} from Cognito after local DB failure.`,
           { cause: rollbackError },
         );
       }
@@ -85,7 +80,7 @@ export class AuthService {
         await this.cognitoService.deleteUser(params.email);
       } catch (rollbackError) {
         this.logger.error(
-          `Critical Rollback Failure: Could not delete user ${this.maskEmail(params.email)} from Cognito after local DB failure.`,
+          `Critical Rollback Failure: Could not delete user ${maskEmail(params.email)} from Cognito after local DB failure.`,
           { cause: rollbackError },
         );
       }

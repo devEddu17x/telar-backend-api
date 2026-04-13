@@ -25,6 +25,8 @@ import {
   CognitoOwnerParams,
   CognitoEmployeeParams,
 } from '../interfaces/cognito-user-interface';
+import { maskEmail } from '../../utils/mask-email.util';
+
 @Injectable()
 export class CognitoService {
   private readonly logger = new Logger(CognitoService.name);
@@ -37,12 +39,6 @@ export class CognitoService {
     });
     this.userPoolId = this.configService.get<string>('cognito.userPoolId');
     this.clientId = this.configService.get<string>('cognito.clientId');
-  }
-
-  private maskEmail(email: string): string {
-    if (!email) return '';
-    const [localPart, domain] = email.split('@');
-    return `${localPart.substring(0, 2)}***@${domain || ''}`;
   }
 
   async createOwner(params: CognitoOwnerParams) {
@@ -136,7 +132,7 @@ export class CognitoService {
     } catch (error: any) {
       if (error.name === 'UserNotFoundException') return [];
       this.logger.error(
-        `Failed to get roles for user: ${this.maskEmail(email)}`,
+        `Failed to get roles for user: ${maskEmail(email)}`,
         error.stack,
       );
       throw new InternalServerErrorException('Could not fetch user roles');
@@ -153,7 +149,7 @@ export class CognitoService {
     } catch (error: any) {
       if (error.name === 'UserNotFoundException') return;
       this.logger.error(
-        `Failed to disable user in Cognito: ${this.maskEmail(email)}`,
+        `Failed to disable user in Cognito: ${maskEmail(email)}`,
         error.stack,
       );
       throw new InternalServerErrorException('Could not disable user');
@@ -170,7 +166,7 @@ export class CognitoService {
     } catch (error: any) {
       if (error.name === 'UserNotFoundException') return;
       this.logger.error(
-        `Failed to enable user in Cognito: ${this.maskEmail(email)}`,
+        `Failed to enable user in Cognito: ${maskEmail(email)}`,
         error.stack,
       );
       throw new InternalServerErrorException('Could not enable user');
@@ -188,7 +184,7 @@ export class CognitoService {
       if (error.name === 'UserNotFoundException') {
         return;
       }
-      const maskedEmail = this.maskEmail(email);
+      const maskedEmail = maskEmail(email);
 
       this.logger.error(
         `Failed to rollback/delete user in Cognito: ${maskedEmail}`,
@@ -245,7 +241,7 @@ export class CognitoService {
       await this.cognitoClient.send(command);
     } catch (error: any) {
       this.logger.error(
-        `Error updating custom:tenant_id for ${this.maskEmail(email)}`,
+        `Error updating custom:tenant_id for ${maskEmail(email)}`,
         {
           cause: error,
         },
@@ -285,7 +281,7 @@ export class CognitoService {
       await this.cognitoClient.send(command);
     } catch (error: any) {
       this.logger.error(
-        `Critical Rollback Failure: Could not clear custom:tenant_id for ${this.maskEmail(email)}`,
+        `Critical Rollback Failure: Could not clear custom:tenant_id for ${maskEmail(email)}`,
         { cause: error },
       );
     }
