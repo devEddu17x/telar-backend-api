@@ -5,11 +5,13 @@ import {
   Get,
   Param,
   Post,
+  Patch,
   UseGuards,
 } from '@nestjs/common';
 import { AdminService } from './admin.service';
 import { ROLES } from 'src/auth/constants/roles';
 import { CreateEmployeeDTO } from 'src/employee/dtos/create-employee.dto';
+import { EmployeeRoleUpdateDTO } from './dtos/promote-employee.dto';
 import { RolesGuard } from 'src/auth/guards/roles.guard';
 import { Roles } from 'src/auth/decorators/roles.decorator';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
@@ -26,21 +28,33 @@ export class AdminController {
     return await this.adminService.getAllRoles();
   }
 
-  // @Patch('employees/promote')
-  // async promoteEmployeeRole(@Body() roleUpdate: EmployeeRoleUpdateDTO) {
-  //   return await this.adminService.updateEmployeeRole(
-  //     roleUpdate.email,
-  //     roleUpdate.role,
-  //   );
-  // }
+  @Patch('employees/promote')
+  async promoteEmployeeRole(
+    @Body() roleUpdate: EmployeeRoleUpdateDTO,
+    @CurrentUser() user: any,
+  ) {
+    return await this.adminService.updateEmployeeRole(
+      roleUpdate.email,
+      roleUpdate.role,
+      user.tenantId,
+      user.roles,
+      user.sub,
+    );
+  }
 
-  // @Patch('employees/revoke')
-  // async revokeEmployeeRole(@Body() roleUpdate: EmployeeRoleUpdateDTO) {
-  //   return await this.adminService.revokeEmployeeRole(
-  //     roleUpdate.email,
-  //     roleUpdate.role,
-  //   );
-  // }
+  @Patch('employees/revoke')
+  async revokeEmployeeRole(
+    @Body() roleUpdate: EmployeeRoleUpdateDTO,
+    @CurrentUser() user: any,
+  ) {
+    return await this.adminService.revokeEmployeeRole(
+      roleUpdate.email,
+      roleUpdate.role,
+      user.tenantId,
+      user.roles,
+      user.sub,
+    );
+  }
 
   @Post('employees')
   async createEmployee(
