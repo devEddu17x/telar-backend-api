@@ -15,6 +15,12 @@ export class AuthService {
     private readonly employeeService: EmployeeService,
   ) {}
 
+  private maskEmail(email: string): string {
+    if (!email) return '';
+    const [localPart, domain] = email.split('@');
+    return `${localPart.substring(0, 2)}***@${domain || ''}`;
+  }
+
   async createOwner(params: CognitoOwnerParams) {
     const cognitoResult = await this.cognitoService.createOwner(params);
 
@@ -36,7 +42,7 @@ export class AuthService {
         await this.cognitoService.deleteUser(params.email);
       } catch (rollbackError) {
         this.logger.error(
-          `Critical Rollback Failure: Could not delete user ${params.email} from Cognito after local DB failure.`,
+          `Critical Rollback Failure: Could not delete user ${this.maskEmail(params.email)} from Cognito after local DB failure.`,
           { cause: rollbackError },
         );
       }
@@ -44,7 +50,7 @@ export class AuthService {
         'Error creating owner locally. Cognito user was rolled back (if possible).',
         { cause: error },
       );
-      throw new BadRequestException('Could not create user', { cause: error });
+      throw new BadRequestException('Could not create user');
     }
   }
 
@@ -79,7 +85,7 @@ export class AuthService {
         await this.cognitoService.deleteUser(params.email);
       } catch (rollbackError) {
         this.logger.error(
-          `Critical Rollback Failure: Could not delete user ${params.email} from Cognito after local DB failure.`,
+          `Critical Rollback Failure: Could not delete user ${this.maskEmail(params.email)} from Cognito after local DB failure.`,
           { cause: rollbackError },
         );
       }
@@ -89,6 +95,18 @@ export class AuthService {
       );
       throw new BadRequestException('Could not create user');
     }
+  }
+
+  async getUserRoles(email: string): Promise<string[]> {
+    return await this.cognitoService.getUserRoles(email);
+  }
+
+  async disableUser(email: string) {
+    return await this.cognitoService.disableUser(email);
+  }
+
+  async enableUser(email: string) {
+    return await this.cognitoService.enableUser(email);
   }
 
   async confirmEmail(email: string, code: string) {
