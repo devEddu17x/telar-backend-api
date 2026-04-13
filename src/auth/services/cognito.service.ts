@@ -169,7 +169,9 @@ export class CognitoService {
       });
       await this.cognitoClient.send(command);
     } catch (error: any) {
-      if (error.name === 'UserNotFoundException') return;
+      if (error.name === 'UserNotFoundException') {
+        throw new NotFoundException('User does not exist.');
+      }
       this.logger.error(
         `Failed to enable user in Cognito: ${maskEmail(email)}`,
         error.stack,
@@ -187,7 +189,7 @@ export class CognitoService {
       await this.cognitoClient.send(command);
     } catch (error: any) {
       if (error.name === 'UserNotFoundException') {
-        return;
+        throw new NotFoundException('User does not exist.');
       }
       const maskedEmail = maskEmail(email);
 
