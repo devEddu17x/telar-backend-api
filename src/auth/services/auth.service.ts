@@ -4,9 +4,8 @@ import {
   CognitoOwnerParams,
   CognitoEmployeeParams,
 } from '../interfaces/cognito-user-interface';
-import { ROLES } from '../constants/roles';
+import { CREATABLE_ROLES } from '../constants/roles';
 import { EmployeeService } from 'src/employee/employee.service';
-import { CreateEmployeeDTO } from 'src/employee/dtos/create-employee.dto';
 
 @Injectable()
 export class AuthService {
@@ -14,7 +13,7 @@ export class AuthService {
   constructor(
     private readonly cognitoService: CognitoService,
     private readonly employeeService: EmployeeService,
-  ) { }
+  ) {}
 
   async createOwner(params: CognitoOwnerParams) {
     const cognitoResult = await this.cognitoService.createOwner(params);
@@ -22,14 +21,14 @@ export class AuthService {
     try {
       const sub = cognitoResult.user.UserSub;
 
-      const employeeDTO: CreateEmployeeDTO = {
+      const employeeData = {
         email: params.email,
         names: params.name,
         lastNames: params.lastName,
       };
       const employeeResult = await this.employeeService.createEmployee(
         sub,
-        employeeDTO,
+        employeeData,
       );
       return employeeResult;
     } catch (error) {
@@ -49,24 +48,21 @@ export class AuthService {
     }
   }
 
-  async createEmployee(params: CognitoEmployeeParams, role: ROLES) {
-    if (role === ROLES.OWNER) {
-      throw new BadRequestException('Cannot assign OWNER role to an employee');
-    }
-
-    const allowedRoles = [ROLES.ADMIN, ROLES.SELLER];
-    if (!allowedRoles.includes(role)) {
-      throw new BadRequestException(`Invalid role: ${role}`);
-    }
+  async createEmployee(
+    params: CognitoEmployeeParams,
+    role: CREATABLE_ROLES,
+    tenantId: string,
+  ) {
     const cognitoResult = await this.cognitoService.createEmployee(
       params,
       role,
+      tenantId,
     );
 
     const sub = cognitoResult.user?.User?.Username;
 
     try {
-      const employeDTO: CreateEmployeeDTO = {
+      const employeeData = {
         email: params.email,
         names: params.name,
         lastNames: params.lastName,
@@ -74,7 +70,8 @@ export class AuthService {
 
       const employeeResult = await this.employeeService.createEmployee(
         sub,
-        employeDTO,
+        employeeData,
+        tenantId,
       );
       return employeeResult;
     } catch (error) {
