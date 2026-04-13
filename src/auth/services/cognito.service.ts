@@ -4,6 +4,7 @@ import {
   InternalServerErrorException,
   Logger,
   BadRequestException,
+  NotFoundException,
 } from '@nestjs/common';
 import {
   CognitoIdentityProviderClient,
@@ -11,10 +12,13 @@ import {
   AdminAddUserToGroupCommand,
   SignUpCommand,
   AdminDeleteUserCommand,
+  AdminDisableUserCommand,
+  AdminEnableUserCommand,
   ConfirmSignUpCommand,
   ResendConfirmationCodeCommand,
   AdminUpdateUserAttributesCommand,
   AdminDeleteUserAttributesCommand,
+  AdminListGroupsForUserCommand,
 } from '@aws-sdk/client-cognito-identity-provider';
 import { ConfigService } from '@nestjs/config';
 import { CREATABLE_ROLES, ROLES } from '../constants/roles';
@@ -22,6 +26,8 @@ import {
   CognitoOwnerParams,
   CognitoEmployeeParams,
 } from '../interfaces/cognito-user-interface';
+import { maskEmail } from '../../utils/mask-email.util';
+
 @Injectable()
 export class CognitoService {
   private readonly logger = new Logger(CognitoService.name);
@@ -116,6 +122,64 @@ export class CognitoService {
     }
   }
 
+  async getUserRoles(email: string): Promise<string[]> {
+    try {
+      const command = new AdminListGroupsForUserCommand({
+        UserPoolId: this.userPoolId,
+        Username: email,
+      });
+      const response = await this.cognitoClient.send(command);
+      return response.Groups?.map((group) => group.GroupName || '') || [];
+    } catch (error: any) {
+      if (error.name === 'UserNotFoundException') {
+        throw new NotFoundException('User does not exist');
+      }
+      this.logger.error(
+        `Failed to get roles for user: ${maskEmail(email)}`,
+        error.stack,
+      );
+      throw new InternalServerErrorException('Could not fetch user roles');
+    }
+  }
+
+  async disableUser(email: string) {
+    try {
+      const command = new AdminDisableUserCommand({
+        UserPoolId: this.userPoolId,
+        Username: email,
+      });
+      await this.cognitoClient.send(command);
+    } catch (error: any) {
+      if (error.name === 'UserNotFoundException') {
+        throw new NotFoundException('User does not exist');
+      }
+      this.logger.error(
+        `Failed to disable user in Cognito: ${maskEmail(email)}`,
+        error.stack,
+      );
+      throw new InternalServerErrorException('Could not disable user');
+    }
+  }
+
+  async enableUser(email: string) {
+    try {
+      const command = new AdminEnableUserCommand({
+        UserPoolId: this.userPoolId,
+        Username: email,
+      });
+      await this.cognitoClient.send(command);
+    } catch (error: any) {
+      if (error.name === 'UserNotFoundException') {
+        throw new NotFoundException('User does not exist.');
+      }
+      this.logger.error(
+        `Failed to enable user in Cognito: ${maskEmail(email)}`,
+        error.stack,
+      );
+      throw new InternalServerErrorException('Could not enable user');
+    }
+  }
+
   async deleteUser(email: string) {
     try {
       const command = new AdminDeleteUserCommand({
@@ -125,10 +189,9 @@ export class CognitoService {
       await this.cognitoClient.send(command);
     } catch (error: any) {
       if (error.name === 'UserNotFoundException') {
-        return;
+        throw new NotFoundException('User does not exist.');
       }
-      const [localPart, domain] = email.split('@');
-      const maskedEmail = `${localPart.substring(0, 2)}***@${domain || ''}`;
+      const maskedEmail = maskEmail(email);
 
       this.logger.error(
         `Failed to rollback/delete user in Cognito: ${maskedEmail}`,
@@ -184,9 +247,12 @@ export class CognitoService {
       });
       await this.cognitoClient.send(command);
     } catch (error: any) {
-      this.logger.error(`Error updating custom:tenant_id for ${email}`, {
-        cause: error,
-      });
+      this.logger.error(
+        `Error updating custom:tenant_id for ${maskEmail(email)}`,
+        {
+          cause: error,
+        },
+      );
       throw new InternalServerErrorException(
         'Failed to link tenant to user account',
       );
@@ -222,7 +288,7 @@ export class CognitoService {
       await this.cognitoClient.send(command);
     } catch (error: any) {
       this.logger.error(
-        `Critical Rollback Failure: Could not clear custom:tenant_id for ${email}`,
+        `Critical Rollback Failure: Could not clear custom:tenant_id for ${maskEmail(email)}`,
         { cause: error },
       );
     }
