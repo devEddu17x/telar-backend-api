@@ -4,6 +4,11 @@ export enum ROLES {
   SELLER = 'seller',
 }
 
+export enum CREATABLE_ROLES {
+  ADMIN = 'admin',
+  SELLER = 'seller',
+}
+
 // enum ACTION {
 //   CREATE = 'create',
 //   READ = 'read',
