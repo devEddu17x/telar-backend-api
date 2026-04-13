@@ -11,10 +11,13 @@ import {
   AdminAddUserToGroupCommand,
   SignUpCommand,
   AdminDeleteUserCommand,
+  AdminDisableUserCommand,
+  AdminEnableUserCommand,
   ConfirmSignUpCommand,
   ResendConfirmationCodeCommand,
   AdminUpdateUserAttributesCommand,
   AdminDeleteUserAttributesCommand,
+  AdminListGroupsForUserCommand,
 } from '@aws-sdk/client-cognito-identity-provider';
 import { ConfigService } from '@nestjs/config';
 import { CREATABLE_ROLES, ROLES } from '../constants/roles';
@@ -34,6 +37,12 @@ export class CognitoService {
     });
     this.userPoolId = this.configService.get<string>('cognito.userPoolId');
     this.clientId = this.configService.get<string>('cognito.clientId');
+  }
+
+  private maskEmail(email: string): string {
+    if (!email) return '';
+    const [localPart, domain] = email.split('@');
+    return `${localPart.substring(0, 2)}***@${domain || ''}`;
   }
 
   async createOwner(params: CognitoOwnerParams) {
@@ -116,6 +125,58 @@ export class CognitoService {
     }
   }
 
+  async getUserRoles(email: string): Promise<string[]> {
+    try {
+      const command = new AdminListGroupsForUserCommand({
+        UserPoolId: this.userPoolId,
+        Username: email,
+      });
+      const response = await this.cognitoClient.send(command);
+      return response.Groups?.map((group) => group.GroupName || '') || [];
+    } catch (error: any) {
+      if (error.name === 'UserNotFoundException') return [];
+      this.logger.error(
+        `Failed to get roles for user: ${this.maskEmail(email)}`,
+        error.stack,
+      );
+      throw new InternalServerErrorException('Could not fetch user roles');
+    }
+  }
+
+  async disableUser(email: string) {
+    try {
+      const command = new AdminDisableUserCommand({
+        UserPoolId: this.userPoolId,
+        Username: email,
+      });
+      await this.cognitoClient.send(command);
+    } catch (error: any) {
+      if (error.name === 'UserNotFoundException') return;
+      this.logger.error(
+        `Failed to disable user in Cognito: ${this.maskEmail(email)}`,
+        error.stack,
+      );
+      throw new InternalServerErrorException('Could not disable user');
+    }
+  }
+
+  async enableUser(email: string) {
+    try {
+      const command = new AdminEnableUserCommand({
+        UserPoolId: this.userPoolId,
+        Username: email,
+      });
+      await this.cognitoClient.send(command);
+    } catch (error: any) {
+      if (error.name === 'UserNotFoundException') return;
+      this.logger.error(
+        `Failed to enable user in Cognito: ${this.maskEmail(email)}`,
+        error.stack,
+      );
+      throw new InternalServerErrorException('Could not enable user');
+    }
+  }
+
   async deleteUser(email: string) {
     try {
       const command = new AdminDeleteUserCommand({
@@ -127,8 +188,7 @@ export class CognitoService {
       if (error.name === 'UserNotFoundException') {
         return;
       }
-      const [localPart, domain] = email.split('@');
-      const maskedEmail = `${localPart.substring(0, 2)}***@${domain || ''}`;
+      const maskedEmail = this.maskEmail(email);
 
       this.logger.error(
         `Failed to rollback/delete user in Cognito: ${maskedEmail}`,
@@ -184,9 +244,12 @@ export class CognitoService {
       });
       await this.cognitoClient.send(command);
     } catch (error: any) {
-      this.logger.error(`Error updating custom:tenant_id for ${email}`, {
-        cause: error,
-      });
+      this.logger.error(
+        `Error updating custom:tenant_id for ${this.maskEmail(email)}`,
+        {
+          cause: error,
+        },
+      );
       throw new InternalServerErrorException(
         'Failed to link tenant to user account',
       );
@@ -222,7 +285,7 @@ export class CognitoService {
       await this.cognitoClient.send(command);
     } catch (error: any) {
       this.logger.error(
-        `Critical Rollback Failure: Could not clear custom:tenant_id for ${email}`,
+        `Critical Rollback Failure: Could not clear custom:tenant_id for ${this.maskEmail(email)}`,
         { cause: error },
       );
     }
