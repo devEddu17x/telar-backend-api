@@ -96,6 +96,14 @@ export class AuthService {
     return await this.cognitoService.getUserRoles(email);
   }
 
+  async addRole(email: string, role: string) {
+    return await this.cognitoService.addRole(email, role);
+  }
+
+  async removeRole(email: string, role: string) {
+    return await this.cognitoService.removeRole(email, role);
+  }
+
   async disableUser(email: string) {
     return await this.cognitoService.disableUser(email);
   }
