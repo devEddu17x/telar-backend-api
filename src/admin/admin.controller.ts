@@ -52,6 +52,7 @@ export class AdminController {
     return await this.adminService.createEmployee(
       createEmployeeDTO,
       user.tenantId,
+      user.roles,
     );
   }
 
