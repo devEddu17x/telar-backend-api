@@ -4,6 +4,7 @@ import {
   InternalServerErrorException,
   Logger,
   BadRequestException,
+  NotFoundException,
 } from '@nestjs/common';
 import {
   CognitoIdentityProviderClient,
@@ -130,7 +131,9 @@ export class CognitoService {
       const response = await this.cognitoClient.send(command);
       return response.Groups?.map((group) => group.GroupName || '') || [];
     } catch (error: any) {
-      if (error.name === 'UserNotFoundException') return [];
+      if (error.name === 'UserNotFoundException') {
+        throw new NotFoundException('User does not exist');
+      }
       this.logger.error(
         `Failed to get roles for user: ${maskEmail(email)}`,
         error.stack,
@@ -147,7 +150,9 @@ export class CognitoService {
       });
       await this.cognitoClient.send(command);
     } catch (error: any) {
-      if (error.name === 'UserNotFoundException') return;
+      if (error.name === 'UserNotFoundException') {
+        throw new NotFoundException('User does not exist');
+      }
       this.logger.error(
         `Failed to disable user in Cognito: ${maskEmail(email)}`,
         error.stack,
