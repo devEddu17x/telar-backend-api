@@ -2,6 +2,8 @@ import {
   Injectable,
   NotImplementedException,
   ForbiddenException,
+  InternalServerErrorException,
+  Logger,
 } from '@nestjs/common';
 import { ROLES, CREATABLE_ROLES } from 'src/auth/constants/roles';
 import { CreateEmployeeDTO } from 'src/employee/dtos/create-employee.dto';
@@ -9,9 +11,11 @@ import { EmployeeWithRoles } from 'src/employee/interfaces/employee-with-roles.i
 import { AuthService } from 'src/auth/services/auth.service';
 import { EmployeeService } from 'src/employee/employee.service';
 import { CognitoEmployeeParams } from 'src/auth/interfaces/cognito-user-interface';
+import { maskEmail } from 'src/utils/mask-email.util';
 
 @Injectable()
 export class AdminService {
+  private readonly logger = new Logger(AdminService.name);
   constructor(
     private readonly authService: AuthService,
     private readonly employeeService: EmployeeService,
@@ -95,7 +99,25 @@ export class AdminService {
 
     await this.authService.disableUser(employee.email);
 
-    await this.employeeService.updateEmployee(id, { isActive: false } as any);
+    try {
+      await this.employeeService.updateEmployee(id, { isActive: false } as any);
+    } catch (error) {
+      this.logger.error(
+        `Failed to disable employee locally, rolling back Cognito state for ${maskEmail(employee.email)}`,
+        error,
+      );
+      try {
+        await this.authService.enableUser(employee.email);
+      } catch (rollbackError) {
+        this.logger.error(
+          `CRITICAL: Failed to rollback Cognito state for ${maskEmail(employee.email)}`,
+          rollbackError,
+        );
+      }
+      throw new InternalServerErrorException(
+        'An error occurred during disable operation.',
+      );
+    }
 
     return { message: 'Employee has been disabled successfully' };
   }
@@ -134,7 +156,25 @@ export class AdminService {
 
     await this.authService.enableUser(employee.email);
 
-    await this.employeeService.updateEmployee(id, { isActive: true } as any);
+    try {
+      await this.employeeService.updateEmployee(id, { isActive: true } as any);
+    } catch (error) {
+      this.logger.error(
+        `Failed to reactivate employee locally, rolling back Cognito state for ${maskEmail(employee.email)}`,
+        error,
+      );
+      try {
+        await this.authService.disableUser(employee.email);
+      } catch (rollbackError) {
+        this.logger.error(
+          `CRITICAL: Failed to rollback Cognito state for ${maskEmail(employee.email)}`,
+          rollbackError,
+        );
+      }
+      throw new InternalServerErrorException(
+        'An error occurred during reactivation.',
+      );
+    }
 
     return { message: 'Employee has been reactivated successfully' };
   }
