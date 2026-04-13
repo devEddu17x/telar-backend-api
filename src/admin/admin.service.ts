@@ -7,11 +7,11 @@ import {
 } from '@nestjs/common';
 import { ROLES, CREATABLE_ROLES } from 'src/auth/constants/roles';
 import { CreateEmployeeDTO } from 'src/employee/dtos/create-employee.dto';
-import { EmployeeWithRoles } from 'src/employee/interfaces/employee-with-roles.interface';
 import { AuthService } from 'src/auth/services/auth.service';
 import { EmployeeService } from 'src/employee/employee.service';
 import { CognitoEmployeeParams } from 'src/auth/interfaces/cognito-user-interface';
 import { maskEmail } from 'src/utils/mask-email.util';
+import { EmployeeEntity } from 'src/employee/entities/employee.entity';
 
 @Injectable()
 export class AdminService {
@@ -59,8 +59,8 @@ export class AdminService {
   //   throw new NotImplementedException('Not implemented yet');
   // }
 
-  async getAllEmployees(): Promise<EmployeeWithRoles[]> {
-    throw new NotImplementedException('Not implemented yet');
+  async getAllEmployees(): Promise<EmployeeEntity[]> {
+    return await this.employeeService.getAllEmployees();
   }
 
   async deleteEmployee(
