@@ -51,16 +51,28 @@ export class AdminService {
     );
   }
 
-  // async updateEmployeeRole(email: string, role: ROLES) {
-  //   throw new NotImplementedException('Not implemented yet');
-  // }
+  async getAllEmployees(tenantId: string): Promise<EmployeeWithRoles[]> {
+    const employees = await this.employeeService.getAllEmployees(tenantId);
 
-  // async revokeEmployeeRole(email: string, role: ROLES) {
-  //   throw new NotImplementedException('Not implemented yet');
-  // }
+    const employeesWithRoles = await Promise.all(
+      employees.map(async (employee) => {
+        const roles = await this.authService.getUserRoles(employee.email);
+        return {
+          id: employee.id,
+          sub: employee.sub,
+          email: employee.email,
+          names: employee.names,
+          lastNames: employee.lastNames,
+          tenantId: employee.tenantId,
+          isActive: employee.isActive,
+          createdAt: employee.createdAt,
+          updatedAt: employee.updatedAt,
+          roles,
+        } as EmployeeWithRoles;
+      }),
+    );
 
-  async getAllEmployees(): Promise<EmployeeWithRoles[]> {
-    throw new NotImplementedException('Not implemented yet');
+    return employeesWithRoles;
   }
 
   async deleteEmployee(
