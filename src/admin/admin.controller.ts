@@ -55,8 +55,8 @@ export class AdminController {
   }
 
   @Get('employees')
-  async getAllEmployees() {
-    return await this.adminService.getAllEmployees();
+  async getAllEmployees(@CurrentUser() user: any) {
+    return await this.adminService.getAllEmployees(user.tenantId);
   }
 
   @Delete('employees/:id')
