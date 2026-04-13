@@ -23,12 +23,14 @@ export class EmployeeService {
 
   async createEmployee(
     sub: string,
-    createEmployeDTO: CreateEmployeeDTO,
+    employeeData: { email: string; names: string; lastNames: string },
+    tenantId?: string,
   ): Promise<EmployeeEntity> {
     try {
       const employee = this.employeeRepository.create({
         sub,
-        ...createEmployeDTO,
+        ...employeeData,
+        tenantId,
       });
       return await this.employeeRepository.save(employee);
     } catch (error) {

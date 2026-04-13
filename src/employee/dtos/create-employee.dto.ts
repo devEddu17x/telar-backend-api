@@ -1,4 +1,11 @@
-import { IsEmail, IsNotEmpty, IsString, MaxLength } from 'class-validator';
+import {
+  IsEmail,
+  IsEnum,
+  IsNotEmpty,
+  IsString,
+  MaxLength,
+} from 'class-validator';
+import { CREATABLE_ROLES } from 'src/auth/constants/roles';
 
 export class CreateEmployeeDTO {
   @IsString()
@@ -16,4 +23,10 @@ export class CreateEmployeeDTO {
   @IsNotEmpty()
   @MaxLength(64)
   lastNames: string;
+
+  @IsEnum(CREATABLE_ROLES, {
+    message: `Role must be a valid creatable role: ${Object.values(CREATABLE_ROLES).join(', ')}`,
+  })
+  @IsNotEmpty()
+  role: CREATABLE_ROLES;
 }

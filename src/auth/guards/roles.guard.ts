@@ -19,11 +19,18 @@ export class RolesGuard implements CanActivate {
       return true;
     }
 
-    return true;
+    const request = context.switchToHttp().getRequest();
+    const user = request.user;
+
+    if (!user || !user.roles || user.roles.length === 0) {
+      return false;
+    }
+
+    return this.matchRoles(requiredRoles, user.roles);
   }
 
   private matchRoles(requiredRoles: string[], userRoles: string[]): boolean {
-    if (userRoles.includes(ROLES.ADMIN)) {
+    if (userRoles.includes(ROLES.OWNER)) {
       return true;
     }
     return requiredRoles.some((role) => userRoles.includes(role));

@@ -14,9 +14,12 @@ import { ROLES } from 'src/auth/constants/roles';
 import { CreateEmployeeDTO } from 'src/employee/dtos/create-employee.dto';
 import { RolesGuard } from 'src/auth/guards/roles.guard';
 import { Roles } from 'src/auth/decorators/roles.decorator';
+import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
+import { RequireTenantGuard } from 'src/auth/guards/require-tenant.guard';
+import { CurrentUser } from 'src/auth/decorators/current-user.decorator';
 
-@Roles(ROLES.ADMIN)
-@UseGuards(RolesGuard)
+@Roles(ROLES.OWNER, ROLES.ADMIN)
+@UseGuards(JwtAuthGuard, RequireTenantGuard, RolesGuard)
 @Controller('admin')
 export class AdminController {
   constructor(private readonly adminService: AdminService) {}
@@ -42,8 +45,15 @@ export class AdminController {
   }
 
   @Post('employees')
-  async createEmployee(@Body() createEmployeeDTO: CreateEmployeeDTO) {
-    return await this.adminService.createEmployee(createEmployeeDTO);
+  async createEmployee(
+    @Body() createEmployeeDTO: CreateEmployeeDTO,
+    @CurrentUser() user: any,
+  ) {
+    return await this.adminService.createEmployee(
+      createEmployeeDTO,
+      user.tenantId,
+      user.roles,
+    );
   }
 
   @Get('employees')
