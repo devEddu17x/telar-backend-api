@@ -27,7 +27,9 @@ export class AdminService {
       createEmployeeDTO.role === CREATABLE_ROLES.ADMIN &&
       !callerRoles.includes(ROLES.OWNER)
     ) {
-      throw new ForbiddenException('Only an owner can create an admin employee.');
+      throw new ForbiddenException(
+        'Only an owner can create an admin employee.'
+      );
     }
 
     const employeeParams: CognitoEmployeeParams = {
