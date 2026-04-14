@@ -1,4 +1,10 @@
-import { BadRequestException, Injectable, Logger } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  Logger,
+  Inject,
+  forwardRef,
+} from '@nestjs/common';
 import { CognitoService } from './cognito.service';
 import {
   CognitoOwnerParams,
@@ -13,6 +19,7 @@ export class AuthService {
   private readonly logger = new Logger(AuthService.name);
   constructor(
     private readonly cognitoService: CognitoService,
+    @Inject(forwardRef(() => EmployeeService))
     private readonly employeeService: EmployeeService,
   ) {}
 
@@ -102,6 +109,18 @@ export class AuthService {
 
   async removeRole(email: string, role: string) {
     return await this.cognitoService.removeRole(email, role);
+  }
+
+  async updateUserAttributes(
+    email: string,
+    names?: string,
+    lastNames?: string,
+  ) {
+    return await this.cognitoService.updateUserAttributes(
+      email,
+      names,
+      lastNames,
+    );
   }
 
   async disableUser(email: string) {
