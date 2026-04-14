@@ -190,4 +190,90 @@ export class AdminService {
 
     return { message: 'Employee has been reactivated successfully' };
   }
+
+  async updateEmployeeRole(
+    targetEmail: string,
+    roleToAssign: ROLES,
+    tenantId: string,
+    callerRoles: string[],
+    callerSub: string,
+  ): Promise<{ message: string }> {
+    const targetEmployee =
+      await this.employeeService.getEmployeeByEmail(targetEmail);
+
+    if (!targetEmployee || targetEmployee.tenantId !== tenantId) {
+      throw new ForbiddenException('Employee not found in your organization.');
+    }
+
+    if (targetEmployee.sub === callerSub) {
+      throw new ForbiddenException('You cannot modify your own roles.');
+    }
+
+    if (roleToAssign === ROLES.OWNER) {
+      throw new ForbiddenException('No one can promote to owner.');
+    }
+
+    if (roleToAssign === ROLES.ADMIN && !callerRoles.includes(ROLES.OWNER)) {
+      throw new ForbiddenException('Only an owner can create admins.');
+    }
+
+    const currentRoles = await this.authService.getUserRoles(targetEmail);
+    if (currentRoles.includes(ROLES.OWNER)) {
+      throw new ForbiddenException('The owner account cannot be modified.');
+    }
+
+    if (currentRoles.includes(roleToAssign)) {
+      return {
+        message: `Employee ${maskEmail(targetEmail)} already has the role ${roleToAssign}`,
+      };
+    }
+
+    await this.authService.addRole(targetEmail, roleToAssign);
+    return {
+      message: `Role ${roleToAssign} assigned successfully to ${maskEmail(targetEmail)}`,
+    };
+  }
+
+  async revokeEmployeeRole(
+    targetEmail: string,
+    roleToRevoke: ROLES,
+    tenantId: string,
+    callerRoles: string[],
+    callerSub: string,
+  ): Promise<{ message: string }> {
+    const targetEmployee =
+      await this.employeeService.getEmployeeByEmail(targetEmail);
+
+    if (!targetEmployee || targetEmployee.tenantId !== tenantId) {
+      throw new ForbiddenException('Employee not found in your organization.');
+    }
+
+    if (targetEmployee.sub === callerSub) {
+      throw new ForbiddenException('You cannot modify your own roles.');
+    }
+
+    if (roleToRevoke === ROLES.OWNER) {
+      throw new ForbiddenException('No one can revoke the owner role.');
+    }
+
+    if (!callerRoles.includes(ROLES.OWNER) && roleToRevoke === ROLES.ADMIN) {
+      throw new ForbiddenException('An admin cannot revoke the admin role.');
+    }
+
+    const currentRoles = await this.authService.getUserRoles(targetEmail);
+    if (currentRoles.includes(ROLES.OWNER)) {
+      throw new ForbiddenException('The owner account cannot be modified.');
+    }
+
+    if (!currentRoles.includes(roleToRevoke)) {
+      return {
+        message: `Employee ${maskEmail(targetEmail)} does not have the role ${roleToRevoke}`,
+      };
+    }
+
+    await this.authService.removeRole(targetEmail, roleToRevoke);
+    return {
+      message: `Role ${roleToRevoke} revoked successfully from ${maskEmail(targetEmail)}`,
+    };
+  }
 }
