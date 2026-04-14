@@ -10,7 +10,7 @@ import { Repository } from 'typeorm/repository/Repository';
 import { IsNull } from 'typeorm';
 import { UpdateEmployeeDTO } from './dtos/update-employee.dto';
 import { Logger } from '@nestjs/common';
-// import { ROLES } from 'src/auth/constants/roles';
+import { maskEmail } from 'src/utils/mask-email.util';
 
 @Injectable()
 export class EmployeeService {
@@ -53,6 +53,17 @@ export class EmployeeService {
         `Employee not found for sub ending with ${sub.slice(-6)}. Possible sync issue between Cognito and local DB.`,
       );
       throw new NotFoundException('Employee sub not found.');
+    }
+    return employee;
+  }
+
+  async getEmployeeByEmail(email: string): Promise<EmployeeEntity> {
+    const employee = await this.employeeRepository.findOneBy({ email });
+    if (!employee) {
+      this.logger.error(
+        `Employee not found for email ${maskEmail(email)}. Possible sync issue between Cognito and local DB.`,
+      );
+      throw new NotFoundException('Employee email not found.');
     }
     return employee;
   }
