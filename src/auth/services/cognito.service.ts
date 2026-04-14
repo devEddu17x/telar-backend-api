@@ -302,6 +302,41 @@ export class CognitoService {
     }
   }
 
+  async updateUserAttributes(
+    email: string,
+    names?: string,
+    lastNames?: string,
+  ) {
+    const attributes = [];
+    if (names) {
+      attributes.push({ Name: 'name', Value: names });
+    }
+    if (lastNames) {
+      attributes.push({ Name: 'family_name', Value: lastNames });
+    }
+
+    if (attributes.length === 0) return;
+
+    try {
+      const command = new AdminUpdateUserAttributesCommand({
+        UserPoolId: this.userPoolId,
+        Username: email,
+        UserAttributes: attributes,
+      });
+      await this.cognitoClient.send(command);
+      this.logger.debug(
+        `Successfully updated name attributes for ${maskEmail(email)}`,
+      );
+    } catch (error: any) {
+      this.logger.error(`Error updating attributes for ${maskEmail(email)}`, {
+        cause: error,
+      });
+      throw new InternalServerErrorException(
+        'Failed to update user profile in identity provider',
+      );
+    }
+  }
+
   async resendConfirmationCode(email: string) {
     try {
       const command = new ResendConfirmationCodeCommand({
