@@ -1,29 +1,31 @@
-import {
-  Body,
-  Controller,
-  Get,
-  NotImplementedException,
-  Patch,
-  UseGuards,
-} from '@nestjs/common';
+import { Body, Controller, Get, Patch, UseGuards } from '@nestjs/common';
 import { EmployeeService } from './employee.service';
 import { UpdateEmployeeDTO } from './dtos/update-employee.dto';
 import { EmployeeEntity } from './entities/employee.entity';
-@UseGuards()
+import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
+import { CurrentUser } from 'src/auth/decorators/current-user.decorator';
+
+@UseGuards(JwtAuthGuard)
 @Controller('employees')
 export class EmployeeController {
-  constructor(private readonly employeeService: EmployeeService) { }
+  constructor(private readonly employeeService: EmployeeService) {}
 
   @Get('me')
   async getEmployee(
+    @CurrentUser() user: any,
   ): Promise<EmployeeEntity & { roles: string[] }> {
-    throw new NotImplementedException('Not implemented yet');
+    return await this.employeeService.getMe(user.sub, user.roles);
   }
 
   @Patch()
   async updateEmployee(
     @Body() updateEmployeeDTO: UpdateEmployeeDTO,
+    @CurrentUser() user: any,
   ): Promise<EmployeeEntity> {
-    throw new NotImplementedException('Not implemented yet');
+    return await this.employeeService.updateMe(
+      user.sub,
+      user.email,
+      updateEmployeeDTO,
+    );
   }
 }
