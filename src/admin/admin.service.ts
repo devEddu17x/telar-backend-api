@@ -198,10 +198,10 @@ export class AdminService {
     callerRoles: string[],
     callerSub: string,
   ): Promise<{ message: string }> {
-    const employees = await this.employeeService.getAllEmployees(tenantId);
-    const targetEmployee = employees.find((e) => e.email === targetEmail);
+    const targetEmployee =
+      await this.employeeService.getEmployeeByEmail(targetEmail);
 
-    if (!targetEmployee) {
+    if (!targetEmployee || targetEmployee.tenantId !== tenantId) {
       throw new ForbiddenException('Employee not found in your organization.');
     }
 
@@ -215,14 +215,6 @@ export class AdminService {
 
     if (roleToAssign === ROLES.ADMIN && !callerRoles.includes(ROLES.OWNER)) {
       throw new ForbiddenException('Only an owner can create admins.');
-    }
-
-    const isAdmin =
-      callerRoles.includes(ROLES.ADMIN) && !callerRoles.includes(ROLES.OWNER);
-    if (isAdmin && roleToAssign === ROLES.ADMIN) {
-      throw new ForbiddenException(
-        'An admin can assign any role except admin or owner.',
-      );
     }
 
     const currentRoles = await this.authService.getUserRoles(targetEmail);
@@ -249,10 +241,10 @@ export class AdminService {
     callerRoles: string[],
     callerSub: string,
   ): Promise<{ message: string }> {
-    const employees = await this.employeeService.getAllEmployees(tenantId);
-    const targetEmployee = employees.find((e) => e.email === targetEmail);
+    const targetEmployee =
+      await this.employeeService.getEmployeeByEmail(targetEmail);
 
-    if (!targetEmployee) {
+    if (!targetEmployee || targetEmployee.tenantId !== tenantId) {
       throw new ForbiddenException('Employee not found in your organization.');
     }
 
@@ -264,9 +256,7 @@ export class AdminService {
       throw new ForbiddenException('No one can revoke the owner role.');
     }
 
-    const isAdmin =
-      callerRoles.includes(ROLES.ADMIN) && !callerRoles.includes(ROLES.OWNER);
-    if (isAdmin && roleToRevoke === ROLES.ADMIN) {
+    if (!callerRoles.includes(ROLES.OWNER) && roleToRevoke === ROLES.ADMIN) {
       throw new ForbiddenException('An admin cannot revoke the admin role.');
     }
 
