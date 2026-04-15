@@ -139,17 +139,31 @@ export class EmployeeService {
     updateEmployeeDTO: UpdateEmployeeDTO,
   ): Promise<EmployeeEntity> {
     const employee = await this.getEmployeeBySub(sub);
+    const originalLocalData = {
+      names: employee.names,
+      lastNames: employee.lastNames,
+    };
+
     const updatedEmployee = await this.updateEmployee(
       employee.id,
       updateEmployeeDTO,
     );
 
     if (updateEmployeeDTO.names || updateEmployeeDTO.lastNames) {
-      await this.authService.updateUserAttributes(
-        email,
-        updateEmployeeDTO.names,
-        updateEmployeeDTO.lastNames,
-      );
+      try {
+        await this.authService.updateUserAttributes(
+          email,
+          updateEmployeeDTO.names,
+          updateEmployeeDTO.lastNames,
+        );
+      } catch (error) {
+        this.logger.error(
+          `Failed to update Cognito attributes for ${maskEmail(email)}, rolling back local database`,
+          { cause: error },
+        );
+        await this.updateEmployee(employee.id, originalLocalData);
+        throw error;
+      }
     }
     return updatedEmployee;
   }
