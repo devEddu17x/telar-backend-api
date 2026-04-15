@@ -2,7 +2,8 @@ import {
   BadRequestException,
   Injectable,
   NotFoundException,
-  // NotImplementedException,
+  Inject,
+  forwardRef,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { EmployeeEntity } from './entities/employee.entity';
@@ -11,6 +12,7 @@ import { IsNull } from 'typeorm';
 import { UpdateEmployeeDTO } from './dtos/update-employee.dto';
 import { Logger } from '@nestjs/common';
 import { maskEmail } from 'src/utils/mask-email.util';
+import { AuthService } from 'src/auth/services/auth.service';
 
 @Injectable()
 export class EmployeeService {
@@ -18,6 +20,8 @@ export class EmployeeService {
   constructor(
     @InjectRepository(EmployeeEntity)
     private readonly employeeRepository: Repository<EmployeeEntity>,
+    @Inject(forwardRef(() => AuthService))
+    private readonly authService: AuthService,
   ) {}
 
   async createEmployee(
@@ -121,13 +125,46 @@ export class EmployeeService {
     return employees;
   }
 
-  // async updateEmployeeRole(email: string, role: ROLES): Promise<{ message: string }> {
-  //   throw new NotImplementedException('Not implemented yet');
-  // }
-  // async getRolesForEmployee(email: string): Promise<string[]> {
-  //   throw new NotImplementedException('Not implemented yet');
-  // }
-  // async revokeEmployeeRole(email: string, role: ROLES) {
-  //   throw new NotImplementedException('Not implemented yet');
-  // }
+  async getMe(
+    sub: string,
+    roles: string[],
+  ): Promise<EmployeeEntity & { roles: string[] }> {
+    const employee = await this.getEmployeeBySub(sub);
+    return { ...employee, roles };
+  }
+
+  async updateMe(
+    sub: string,
+    email: string,
+    updateEmployeeDTO: UpdateEmployeeDTO,
+  ): Promise<EmployeeEntity> {
+    const employee = await this.getEmployeeBySub(sub);
+    const originalLocalData = {
+      names: employee.names,
+      lastNames: employee.lastNames,
+    };
+
+    const updatedEmployee = await this.updateEmployee(
+      employee.id,
+      updateEmployeeDTO,
+    );
+
+    if (updateEmployeeDTO.names || updateEmployeeDTO.lastNames) {
+      try {
+        await this.authService.updateUserAttributes(
+          email,
+          updateEmployeeDTO.names,
+          updateEmployeeDTO.lastNames,
+        );
+      } catch (error) {
+        this.logger.error(
+          `Failed to update Cognito attributes for ${maskEmail(email)}, rolling back local database`,
+          { cause: error },
+        );
+        await this.updateEmployee(employee.id, originalLocalData);
+        throw error;
+      }
+    }
+    return updatedEmployee;
+  }
 }
