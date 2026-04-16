@@ -9,32 +9,26 @@ export function IsValidDeliveryDate(validationOptions?: ValidationOptions) {
       options: validationOptions,
       validator: {
         validate(value: string) {
-          if (!value) {
-            return false;
-          }
+          if (!value) return false;
 
-          const deliveryDate = new Date(value);
-          const today = new Date();
+          const deliveryDate = new Date(`${value}T00:00:00.000-05:00`);
 
-          today.setHours(0, 0, 0, 0);
-          deliveryDate.setHours(0, 0, 0, 0);
+          const peruDateString = new Intl.DateTimeFormat('en-US', {
+            timeZone: 'America/Lima',
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+          }).format(new Date());
 
-          const minDate = new Date(today);
-          minDate.setDate(today.getDate() + 7);
+          const [month, day, year] = peruDateString.split('/');
+          const currentPeruDate = new Date(
+            `${year}-${month}-${day}T00:00:00.000-05:00`,
+          );
 
-          const maxDate = new Date(today);
-          maxDate.setDate(today.getDate() + 60);
-
-          return deliveryDate >= minDate && deliveryDate <= maxDate;
+          return deliveryDate >= currentPeruDate;
         },
         defaultMessage() {
-          const today = new Date();
-          const minDate = new Date(today);
-          minDate.setDate(today.getDate() + 7);
-          const maxDate = new Date(today);
-          maxDate.setDate(today.getDate() + 60);
-
-          return `Delivery date must be between ${minDate.toISOString().split('T')[0]} and ${maxDate.toISOString().split('T')[0]} (7 to 60 days from today)`;
+          return `Date must be today or in the future based on Peru's local time (UTC-5)`;
         },
       },
     });
