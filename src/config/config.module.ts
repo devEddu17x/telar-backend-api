@@ -15,7 +15,7 @@ import * as config from './env';
         config.cookieConfig,
         config.apiConfig,
         config.pinoLoggerConfig,
-        config.cloudflare,
+        config.s3Config,
         config.emailConfig,
         config.cognitoConfig,
       ],
