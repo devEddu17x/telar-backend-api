@@ -62,6 +62,7 @@ export class ClothesController {
     const savedImages = await this.clothesImagesService.addImagesToClothes(
       createdClothes.id,
       imageUrls,
+      user.tenantId,
     );
     if (!savedImages || savedImages.length === 0) {
       throw new Error('Failed to save image URLs to the database');
@@ -94,6 +95,7 @@ export class ClothesController {
     const savedImages = await this.clothesImagesService.addImagesToClothes(
       createdClothes.id,
       imageUrls,
+      user.tenantId,
     );
     if (!savedImages || savedImages.length === 0) {
       throw new Error('Failed to save image URLs to the database');
@@ -195,10 +197,12 @@ export class ClothesController {
   async deleteImage(
     @Param('id', ParseUUIDPipe) clothesId: string,
     @Body() deleteImageDto: DeleteImageDTO,
+    @CurrentUser() user: any,
   ): Promise<any> {
     return this.clothesImagesService.deleteImageFromClothes(
       clothesId,
       deleteImageDto.url,
+      user.tenantId,
     );
   }
 }
