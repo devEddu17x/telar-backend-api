@@ -73,16 +73,6 @@ export class ClothesImagesService {
     imageUrl: string,
     tenantId: string,
   ): Promise<{ message: string }> {
-    const clothe = await this.clothesRepository.findOne({
-      where: { id: clothesId, tenantId },
-    });
-
-    if (!clothe) {
-      throw new NotFoundException(
-        'Clothes item not found or you do not have permission access it',
-      );
-    }
-
     const image = await this.imageRepository.findOne({
       where: {
         url: imageUrl,
@@ -126,14 +116,6 @@ export class ClothesImagesService {
     imageUrls: string[],
     tenantId: string,
   ): Promise<ClotheImageEntity[]> {
-    const clothe = await this.clothesRepository.findOne({
-      where: { id: clothesId, tenantId },
-    });
-    if (!clothe) {
-      throw new BadRequestException(
-        'Clothes item not found or does not belong to this tenant',
-      );
-    }
     const newImages = imageUrls.map((url) =>
       this.imageRepository.create({ url, clothesId, tenantId }),
     );
