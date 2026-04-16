@@ -33,7 +33,7 @@ export class QuoteEntity {
   @Column('uuid', { name: 'customer_id' })
   customerId: string;
 
-  @ManyToOne(() => CustomerEntity, { onDelete: 'RESTRICT' })
+  @ManyToOne(() => CustomerEntity, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'customer_id', referencedColumnName: 'id' })
   customer: CustomerEntity;
 

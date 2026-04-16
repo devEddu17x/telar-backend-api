@@ -43,14 +43,14 @@ export class OrderEntity {
   @Column('uuid', { name: 'quote_id' })
   quoteId: string;
 
-  @ManyToOne(() => QuoteEntity, { onDelete: 'RESTRICT' })
+  @ManyToOne(() => QuoteEntity, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'quote_id', referencedColumnName: 'id' })
   quote: QuoteEntity;
 
   @Column('uuid', { name: 'address_id' })
   addressId: string;
 
-  @OneToOne(() => AddressEntity, { onDelete: 'RESTRICT' })
+  @OneToOne(() => AddressEntity, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'address_id', referencedColumnName: 'id' })
   address: AddressEntity;
 
