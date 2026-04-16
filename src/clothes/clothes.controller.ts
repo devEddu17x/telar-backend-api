@@ -14,6 +14,7 @@ import { ClothesService } from './services/clothes.service';
 import { CreateClothesDTO } from './dto/create-clothes.dto';
 import { RolesGuard } from 'src/auth/guards/roles.guard';
 import { Roles } from 'src/auth/decorators/roles.decorator';
+import { CurrentUser } from 'src/auth/decorators/current-user.decorator';
 import { ROLES } from 'src/auth/constants/roles';
 import { CreatedClothes } from './interfaces/created-clothes.interface';
 import { StorageService } from 'src/storage/storage.service';
@@ -26,7 +27,10 @@ import { DeleteImageDTO } from './dto/delete-image.dto';
 import { ClothesVariantsService } from './services/clothes-variants.service';
 import { ClothesImagesService } from './services/clothes-images.service';
 import { CreateDraftClothesDTO } from './dto/create-draft-clothes.dto';
-
+import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
+import { RequireTenantGuard } from 'src/auth/guards/require-tenant.guard';
+@Roles(ROLES.ADMIN, ROLES.SELLER)
+@UseGuards(JwtAuthGuard, RequireTenantGuard, RolesGuard)
 @Controller('clothes')
 export class ClothesController {
   constructor(
@@ -37,18 +41,19 @@ export class ClothesController {
   ) {}
 
   @UseGuards(RolesGuard)
-  @Roles(ROLES.ADMIN)
   @Post()
   async createClothes(
     @Body() clothesDto: CreateClothesDTO,
+    @CurrentUser() user: any,
   ): Promise<CreatedClothes & { preSignedPuts: PresignedPut[] }> {
     const createdClothes: CreatedClothes =
-      await this.clothesService.createClothe(clothesDto);
+      await this.clothesService.createClothe(clothesDto, user.tenantId);
 
     const preSignedPuts: PresignedPut[] | [] =
       await this.storageService.createPresignedPuts(
         createdClothes.id,
         clothesDto.images,
+        user.tenantId,
         { ttlSeconds: 3600, cacheControl: 'no-cache' },
       );
 
@@ -65,18 +70,22 @@ export class ClothesController {
   }
 
   @UseGuards(RolesGuard)
-  @Roles(ROLES.SELLER)
   @Post('quick-create')
   async createDraftClothes(
     @Body() draftClothesDto: CreateDraftClothesDTO,
+    @CurrentUser() user: any,
   ): Promise<CreatedClothes & { preSignedPuts: PresignedPut[] }> {
     const createdClothes: CreatedClothes =
-      await this.clothesService.createDraftClothe(draftClothesDto);
+      await this.clothesService.createDraftClothe(
+        draftClothesDto,
+        user.tenantId,
+      );
 
     const preSignedPuts: PresignedPut[] | [] =
       await this.storageService.createPresignedPuts(
         createdClothes.id,
         draftClothesDto.images,
+        user.tenantId,
         { ttlSeconds: 3600, cacheControl: 'no-cache' },
       );
 
@@ -123,7 +132,6 @@ export class ClothesController {
   }
 
   @UseGuards(RolesGuard)
-  @Roles(ROLES.ADMIN)
   @Patch(':id')
   async updateClothes(
     @Param('id', ParseUUIDPipe) clothesId: string,
@@ -146,7 +154,6 @@ export class ClothesController {
   }
 
   @UseGuards(RolesGuard)
-  @Roles(ROLES.ADMIN)
   @Patch(':id/variants/:variantId')
   async updateVariant(
     @Param('id', ParseUUIDPipe) clothesId: string,
@@ -161,7 +168,6 @@ export class ClothesController {
   }
 
   @UseGuards(RolesGuard)
-  @Roles(ROLES.ADMIN)
   @Delete(':id/variants/:variantId')
   async deleteVariant(
     @Param('id', ParseUUIDPipe) clothesId: string,
@@ -171,20 +177,20 @@ export class ClothesController {
   }
 
   @UseGuards(RolesGuard)
-  @Roles(ROLES.ADMIN)
   @Post(':id/images')
   async addImages(
     @Param('id', ParseUUIDPipe) clothesId: string,
     @Body() addImagesDto: AddImagesToClothesDTO,
+    @CurrentUser() user: any,
   ): Promise<any> {
     return this.clothesImagesService.addNewImagesToClothes(
       clothesId,
       addImagesDto.images,
+      user.tenantId,
     );
   }
 
   @UseGuards(RolesGuard)
-  @Roles(ROLES.ADMIN)
   @Delete(':id/images')
   async deleteImage(
     @Param('id', ParseUUIDPipe) clothesId: string,
