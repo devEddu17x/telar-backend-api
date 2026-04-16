@@ -103,21 +103,23 @@ export class ClothesController {
   }
 
   @Get()
-  async getAllClothes(): Promise<any> {
+  async getAllClothes(@CurrentUser() user: any): Promise<any> {
     // this method should return different data based on the user's role:
     // - if the user is an admin, return all clothes with all details
     // - if the user is a seller, return only clothes that are not drafts (actually this should be discussed, maybe sellers should also see their own drafts?)
-    return this.clothesService.getAllClothes();
+    return this.clothesService.getAllClothes(user.tenantId);
   }
 
   @Get('search')
   async searchAndFilterClothes(
+    @CurrentUser() user: any,
     @Query('name') name?: string,
     @Query('description') description?: string,
     @Query('size') size?: string,
     @Query('gender') gender?: string,
   ): Promise<any> {
     return this.clothesService.searchAndFilterClothes(
+      user.tenantId,
       name,
       description,
       size,
@@ -128,56 +130,65 @@ export class ClothesController {
   @Get(':id')
   async getClothesById(
     @Param('id', ParseUUIDPipe) clothesId: string,
+    @CurrentUser() user: any,
   ): Promise<any> {
-    return this.clothesService.getClothesById(clothesId);
+    return this.clothesService.getClothesById(clothesId, user.tenantId);
   }
 
-  @UseGuards(RolesGuard)
   @Patch(':id')
   async updateClothes(
     @Param('id', ParseUUIDPipe) clothesId: string,
     @Body() updateClothesDto: UpdateClothesDTO,
+    @CurrentUser() user: any,
   ): Promise<any> {
-    return this.clothesService.updateClothes(clothesId, updateClothesDto);
+    return this.clothesService.updateClothes(
+      clothesId,
+      updateClothesDto,
+      user.tenantId,
+    );
   }
 
-  @UseGuards(RolesGuard)
-  @Roles(ROLES.ADMIN)
   @Post(':id/variants')
   async addVariant(
     @Param('id', ParseUUIDPipe) clothesId: string,
     @Body() variantDto: Variant,
+    @CurrentUser() user: any,
   ): Promise<any> {
     return this.clothesVariantService.addVariantToClothes(
       clothesId,
       variantDto,
+      user.tenantId,
     );
   }
 
-  @UseGuards(RolesGuard)
   @Patch(':id/variants/:variantId')
   async updateVariant(
     @Param('id', ParseUUIDPipe) clothesId: string,
     @Param('variantId', ParseUUIDPipe) variantId: string,
     @Body() updateVariantDto: UpdateVariantDTO,
+    @CurrentUser() user: any,
   ): Promise<any> {
     return this.clothesVariantService.updateVariant(
       clothesId,
       variantId,
       updateVariantDto,
+      user.tenantId,
     );
   }
 
-  @UseGuards(RolesGuard)
   @Delete(':id/variants/:variantId')
   async deleteVariant(
     @Param('id', ParseUUIDPipe) clothesId: string,
     @Param('variantId', ParseUUIDPipe) variantId: string,
+    @CurrentUser() user: any,
   ): Promise<any> {
-    return this.clothesVariantService.deleteVariant(clothesId, variantId);
+    return this.clothesVariantService.deleteVariant(
+      clothesId,
+      variantId,
+      user.tenantId,
+    );
   }
 
-  @UseGuards(RolesGuard)
   @Post(':id/images')
   async addImages(
     @Param('id', ParseUUIDPipe) clothesId: string,
@@ -191,7 +202,6 @@ export class ClothesController {
     );
   }
 
-  @UseGuards(RolesGuard)
   @Delete(':id/images')
   async deleteImage(
     @Param('id', ParseUUIDPipe) clothesId: string,
