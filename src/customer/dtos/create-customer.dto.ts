@@ -22,7 +22,7 @@ export class CreateCustomerDTO {
   @IsString()
   @MaxLength(100)
   reference?: string;
-
+  @IsOptional()
   @IsString()
   @Length(9, 9)
   @Matches(/^9\d{8}$/, {
