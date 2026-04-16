@@ -39,7 +39,10 @@ export class ClothesService {
     private readonly storageService: StorageService,
   ) {}
 
-  async createClothe(clothes: CreateClothesDTO): Promise<CreatedClothes> {
+  async createClothe(
+    clothes: CreateClothesDTO,
+    tenantId: string,
+  ): Promise<CreatedClothes> {
     const { name, description, price, variants } = clothes;
 
     const variantKeys = new Set<string>();
@@ -77,7 +80,7 @@ export class ClothesService {
       await queryRunner.startTransaction();
       const newClothe = await queryRunner.manager.save(
         ClothesEntity,
-        this.clothesRepository.create({ name, description, price }),
+        this.clothesRepository.create({ name, description, price, tenantId }),
       );
       const newVariants = variants.map((v) =>
         this.variantsRepository.create({
@@ -102,6 +105,7 @@ export class ClothesService {
 
   async createDraftClothe(
     clothes: CreateDraftClothesDTO,
+    tenantId: string,
   ): Promise<CreatedClothes> {
     const { name, price } = clothes;
     const newClothe = this.clothesRepository.create({
@@ -109,6 +113,7 @@ export class ClothesService {
       price,
       isDraft: true,
       isInEcommerce: false,
+      tenantId,
     });
 
     const [gender, size] = await Promise.all([

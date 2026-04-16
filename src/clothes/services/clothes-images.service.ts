@@ -22,6 +22,7 @@ export class ClothesImagesService {
   async addNewImagesToClothes(
     clothesId: string,
     images: AllowedImagesDTO[],
+    tenantId: string,
   ): Promise<{ imageUrls: string[]; preSignedPuts: any[] }> {
     const clothe = await this.clothesRepository.findOne({
       where: { id: clothesId },
@@ -35,6 +36,7 @@ export class ClothesImagesService {
       const preSignedPuts = await this.storageService.createPresignedPuts(
         clothesId,
         images,
+        tenantId,
         {
           ttlSeconds: 3600,
           cacheControl: 'no-cache',
