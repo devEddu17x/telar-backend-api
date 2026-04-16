@@ -8,6 +8,7 @@ import {
   IsOptional,
   IsString,
   IsUUID,
+  Max,
   Min,
   ValidateNested,
 } from 'class-validator';
@@ -19,6 +20,8 @@ export class CustomizationDTO {
 
   @IsOptional()
   @IsNumber()
+  @Min(0, { message: 'quantity must be at least 0' })
+  @Max(100, { message: 'quantity must be at most 100' })
   number?: number;
 
   @IsOptional()
@@ -52,6 +55,7 @@ export class QuoteDetailDTO {
   )
   @IsInt({ message: 'quantity must be an integer' })
   @Min(1, { message: 'quantity must be at least 1' })
+  @Max(100000, { message: 'quantity must be at most 10000' })
   quantity: number;
 
   @IsOptional()

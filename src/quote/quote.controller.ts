@@ -22,9 +22,11 @@ import { QuoteSummary } from './interfaces/clothes-data.interface';
 import { CreatedClothes } from './interfaces/created-clothes.interface';
 import { UpdateQuoteDTO } from './dtos/update-quote.dto';
 import { QuoteEntity } from './entities/quote.entity';
+import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
+import { RequireTenantGuard } from 'src/auth/guards/require-tenant.guard';
 
-@Roles(ROLES.SELLER)
-@UseGuards(RolesGuard)
+@Roles(ROLES.SELLER, ROLES.ADMIN)
+@UseGuards(JwtAuthGuard, RequireTenantGuard, RolesGuard)
 @Controller('quotes')
 export class QuoteController {
   constructor(private readonly quoteService: QuoteService) {}
@@ -39,38 +41,42 @@ export class QuoteController {
 
   @Get()
   async getQuotes(
+    @CurrentUser() user: any,
     @Query('status') status?: QuoteStatus,
   ): Promise<QuoteSummary[]> {
     if (!status) {
-      return this.quoteService.getAll();
+      return this.quoteService.getAll(user.tenantId);
     }
     if (!Object.values(QuoteStatus).includes(status)) {
       throw new BadRequestException(
         `Invalid status. Valid values: ${Object.values(QuoteStatus).join(', ')}`,
       );
     }
-    return this.quoteService.getQuotesByStatus(status);
+    return this.quoteService.getQuotesByStatus(status, user.tenantId);
   }
 
   @Get(':id')
   async getQuoteById(
     @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() user: any,
   ): Promise<QuoteEntity> {
-    return this.quoteService.getQuoteById(id);
+    return this.quoteService.getQuoteById(id, user.tenantId);
   }
 
   @Put(':id')
   async updateQuote(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpdateQuoteDTO,
+    @CurrentUser() user: any,
   ): Promise<CreatedClothes> {
-    return this.quoteService.updateQuote(id, dto);
+    return this.quoteService.updateQuote(id, dto, user.tenantId);
   }
 
   @Patch(':id/cancel')
   async cancelQuote(
     @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() user: any,
   ): Promise<QuoteEntity> {
-    return this.quoteService.cancelQuote(id);
+    return this.quoteService.cancelQuote(id, user.tenantId);
   }
 }

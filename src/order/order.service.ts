@@ -27,8 +27,11 @@ export class OrderService {
     private readonly clothesService: ClothesService,
   ) {}
 
-  async createOrder(dto: CreateOrderDTO): Promise<OrderEntity> {
-    const quote = await this.quoteService.getQuoteById(dto.quoteId);
+  async createOrder(
+    dto: CreateOrderDTO,
+    tenantId: string,
+  ): Promise<OrderEntity> {
+    const quote = await this.quoteService.getQuoteById(dto.quoteId, tenantId);
 
     if (quote.status === QuoteStatus.CANCELLED) {
       throw new BadRequestException(

@@ -12,6 +12,7 @@ import { OrderService } from './order.service';
 import { CreateOrderDTO } from './dtos/create-order.dto';
 import { RolesGuard } from 'src/auth/guards/roles.guard';
 import { Roles } from 'src/auth/decorators/roles.decorator';
+import { CurrentUser } from 'src/auth/decorators/current-user.decorator';
 import { ROLES } from 'src/auth/constants/roles';
 import { UpdateOrderDTO } from './dtos/update-order.dto';
 import { CancelOrderDTO } from './dtos/cancel-order.dto';
@@ -23,8 +24,8 @@ export class OrderController {
   constructor(private readonly orderService: OrderService) {}
 
   @Post()
-  async createOrder(@Body() dto: CreateOrderDTO) {
-    return await this.orderService.createOrder(dto);
+  async createOrder(@Body() dto: CreateOrderDTO, @CurrentUser() user: any) {
+    return await this.orderService.createOrder(dto, user.tenantId);
   }
 
   @Get()
