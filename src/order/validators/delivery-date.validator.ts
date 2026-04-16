@@ -11,7 +11,12 @@ export function IsValidDeliveryDate(validationOptions?: ValidationOptions) {
         validate(value: string) {
           if (!value) return false;
 
-          const deliveryDate = new Date(`${value}T00:00:00.000-05:00`);
+          const datePart = value.split('T')[0];
+          const deliveryDate = new Date(`${datePart}T00:00:00.000-05:00`);
+
+          if (isNaN(deliveryDate.getTime())) {
+            return false;
+          }
 
           const peruDateString = new Intl.DateTimeFormat('en-US', {
             timeZone: 'America/Lima',
