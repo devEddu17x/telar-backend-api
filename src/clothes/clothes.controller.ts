@@ -48,7 +48,6 @@ export class ClothesController {
   ): Promise<CreatedClothes & { preSignedPuts: PresignedPut[] }> {
     const createdClothes: CreatedClothes =
       await this.clothesService.createClothe(clothesDto, user.tenantId);
-
     const preSignedPuts: PresignedPut[] | [] =
       await this.storageService.createPresignedPuts(
         createdClothes.id,
