@@ -5,14 +5,24 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   OneToMany,
+  ManyToOne,
+  JoinColumn,
 } from 'typeorm';
 import { ClothesVariantEntity } from './clothes-variant.entity';
 import { ClotheImageEntity } from './images.entity';
+import { TenantEntity } from '../../tenant/entities/tenant.entity';
 
 @Entity('clothes')
 export class ClothesEntity {
   @PrimaryGeneratedColumn('uuid')
   id: string;
+
+  @Column({ type: 'uuid', nullable: false })
+  tenantId: string;
+
+  @ManyToOne(() => TenantEntity, { nullable: false, onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'tenantId' })
+  tenant: TenantEntity;
 
   @Column({ type: 'varchar', length: 120, nullable: false })
   name: string;
