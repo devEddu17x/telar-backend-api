@@ -17,20 +17,21 @@ export class StorageService {
   private bucket: string;
   private url: string;
   constructor(private readonly configService: ConfigService) {
-    const storage = this.configService.get('cloudflare');
+    const storage = this.configService.get('s3');
     this.s3 = new S3Client(storage.config);
     this.bucket = storage.bucket;
     this.url = storage.baseUrlImages;
   }
 
-  buildTempKey(prendaId: string, filename: string) {
+  buildTempKey(tenantId: string, prendaId: string, filename: string) {
     const ext = filename.includes('.') ? filename.split('.').pop() : 'bin';
     const uuid = randomUUID();
-    return `${prendaId}/${uuid}.${ext}`;
+    return `tenant-id-${tenantId}/cltohe-id-${prendaId}/image-id-${uuid}.${ext}`;
   }
   async createPresignedPuts(
     prendaId: string,
     files: FilePlan[],
+    tenantId: string,
     opts?: { ttlSeconds?: number; cacheControl?: string },
   ): Promise<PresignedPut[]> {
     if (!files || files.length === 0) {
@@ -41,7 +42,7 @@ export class StorageService {
 
     const results: PresignedPut[] = [];
     for (const f of files) {
-      const key = this.buildTempKey(prendaId, f.filename);
+      const key = this.buildTempKey(tenantId, prendaId, f.filename);
 
       const cmd = new PutObjectCommand({
         Bucket: this.bucket,
