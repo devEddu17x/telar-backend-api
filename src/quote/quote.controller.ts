@@ -16,6 +16,7 @@ import { CreateQuoteDTO } from './dtos/create-quote.dto';
 import { QuoteStatus } from './enums/status.enum';
 import { RolesGuard } from 'src/auth/guards/roles.guard';
 import { Roles } from 'src/auth/decorators/roles.decorator';
+import { CurrentUser } from 'src/auth/decorators/current-user.decorator';
 import { ROLES } from 'src/auth/constants/roles';
 import { QuoteSummary } from './interfaces/clothes-data.interface';
 import { CreatedClothes } from './interfaces/created-clothes.interface';
@@ -29,8 +30,11 @@ export class QuoteController {
   constructor(private readonly quoteService: QuoteService) {}
 
   @Post()
-  async createQuote(@Body() dto: CreateQuoteDTO): Promise<CreatedClothes> {
-    return this.quoteService.createQuote(dto);
+  async createQuote(
+    @Body() dto: CreateQuoteDTO,
+    @CurrentUser() user: any,
+  ): Promise<CreatedClothes> {
+    return this.quoteService.createQuote(dto, user.tenantId);
   }
 
   @Get()

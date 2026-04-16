@@ -14,9 +14,12 @@ export class CustomerService {
   constructor(
     @InjectRepository(CustomerEntity)
     private readonly customerRepository: Repository<CustomerEntity>,
-  ) { }
-  async createCustomer(customerDTO: CreateCustomerDTO) {
-    const newCustomer = this.customerRepository.create(customerDTO);
+  ) {}
+  async createCustomer(customerDTO: CreateCustomerDTO, tenantId: string) {
+    const newCustomer = this.customerRepository.create({
+      ...customerDTO,
+      tenantId,
+    });
     const createdUser = await this.customerRepository.save(newCustomer);
     if (!createdUser) {
       throw new BadRequestException(
@@ -27,10 +30,10 @@ export class CustomerService {
     return createdUser;
   }
 
-  async getAllCustomers(): Promise<CustomerEntity[]> {
+  async getAllCustomers(tenantId: string): Promise<CustomerEntity[]> {
     let customers: CustomerEntity[];
     try {
-      customers = await this.customerRepository.find();
+      customers = await this.customerRepository.find({ where: { tenantId } });
     } catch (error) {
       throw new BadRequestException('Error retrieving customers');
     }
@@ -40,10 +43,12 @@ export class CustomerService {
     return customers;
   }
 
-  async getCustomerById(id: string): Promise<CustomerEntity> {
+  async getCustomerById(id: string, tenantId: string): Promise<CustomerEntity> {
     let customer: CustomerEntity;
     try {
-      customer = await this.customerRepository.findOne({ where: { id } });
+      customer = await this.customerRepository.findOne({
+        where: { id, tenantId },
+      });
     } catch (error) {
       throw new BadRequestException('Error retrieving customer');
     }
@@ -53,15 +58,25 @@ export class CustomerService {
     return customer;
   }
 
-  async updateCustomer(id: string, customerDTO: UpdateCustomerDTO) {
-    const result = await this.customerRepository.update(id, customerDTO);
+  async updateCustomer(
+    id: string,
+    customerDTO: UpdateCustomerDTO,
+    tenantId: string,
+  ) {
+    const result = await this.customerRepository.update(
+      { id, tenantId },
+      customerDTO,
+    );
     if (result.affected === 0) {
-      throw new NotFoundException('Customer not found');
+      throw new NotFoundException(
+        'Customer not found or you do not have permission',
+      );
     }
-    return this.getCustomerById(id);
+    return this.getCustomerById(id, tenantId);
   }
 
   async searchCustomers(
+    tenantId: string,
     names?: string,
     lastNames?: string,
     phone?: string,
@@ -71,39 +86,26 @@ export class CustomerService {
     }
 
     try {
-      let query = this.customerRepository.createQueryBuilder('customer');
-      let hasCondition = false;
+      let query = this.customerRepository
+        .createQueryBuilder('customer')
+        .where('customer.tenantId = :tenantId', { tenantId });
 
       if (names && names.trim() !== '') {
-        query = query.where('customer.names ILIKE :names', {
+        query = query.andWhere('customer.names ILIKE :names', {
           names: `%${names.trim()}%`,
         });
-        hasCondition = true;
       }
 
       if (lastNames && lastNames.trim() !== '') {
-        if (hasCondition) {
-          query = query.andWhere('customer.lastNames ILIKE :lastNames', {
-            lastNames: `%${lastNames.trim()}%`,
-          });
-        } else {
-          query = query.where('customer.lastNames ILIKE :lastNames', {
-            lastNames: `%${lastNames.trim()}%`,
-          });
-          hasCondition = true;
-        }
+        query = query.andWhere('customer.lastNames ILIKE :lastNames', {
+          lastNames: `%${lastNames.trim()}%`,
+        });
       }
 
       if (phone && phone.trim() !== '') {
-        if (hasCondition) {
-          query = query.andWhere('customer.phone ILIKE :phone', {
-            phone: `%${phone.trim()}%`,
-          });
-        } else {
-          query = query.where('customer.phone ILIKE :phone', {
-            phone: `%${phone.trim()}%`,
-          });
-        }
+        query = query.andWhere('customer.phone ILIKE :phone', {
+          phone: `%${phone.trim()}%`,
+        });
       }
 
       const customers = await query.getMany();
