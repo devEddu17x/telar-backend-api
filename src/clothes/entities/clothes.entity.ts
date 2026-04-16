@@ -22,7 +22,7 @@ export class ClothesEntity {
 
   @ManyToOne(() => TenantEntity, { nullable: false, onDelete: 'CASCADE' })
   @JoinColumn({ name: 'tenantId' })
-  tenant: TenantEntity;
+  tenant?: TenantEntity;
 
   @Column({ type: 'varchar', length: 120, nullable: false })
   name: string;
