@@ -19,7 +19,7 @@ import { CustomerEntity } from './entities/customer.entity';
 import { UpdateCustomerDTO } from './dtos/update-customer.dto';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { RequireTenantGuard } from 'src/auth/guards/require-tenant.guard';
-@Roles(ROLES.OWNER, ROLES.ADMIN)
+@Roles(ROLES.SELLER, ROLES.ADMIN)
 @UseGuards(JwtAuthGuard, RequireTenantGuard, RolesGuard)
 @Controller('customers')
 export class CustomerController {
