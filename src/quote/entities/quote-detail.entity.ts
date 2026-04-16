@@ -1,17 +1,27 @@
 import {
   Column,
   Entity,
+  Index,
   JoinColumn,
   ManyToOne,
   PrimaryGeneratedColumn,
 } from 'typeorm';
 import { QuoteEntity } from './quote.entity';
 import { ClothesVariantEntity } from 'src/clothes/entities/clothes-variant.entity';
+import { TenantEntity } from 'src/tenant/entities/tenant.entity';
 
 @Entity('quote_detail')
+@Index(['tenantId'])
 export class QuoteDetailEntity {
   @PrimaryGeneratedColumn('uuid')
   id: string;
+
+  @Column({ type: 'uuid', nullable: false })
+  tenantId: string;
+
+  @ManyToOne(() => TenantEntity, { nullable: false, onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'tenantId' })
+  tenant?: TenantEntity;
 
   @Column({ type: 'decimal', precision: 10, scale: 2, nullable: false })
   unitPrice: number;

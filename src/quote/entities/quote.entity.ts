@@ -3,6 +3,7 @@ import {
   Column,
   CreateDateColumn,
   Entity,
+  Index,
   JoinColumn,
   ManyToOne,
   OneToMany,
@@ -11,10 +12,20 @@ import {
 } from 'typeorm';
 import { QuoteDetailEntity } from './quote-detail.entity';
 import { QuoteStatus } from '../enums/status.enum';
+import { TenantEntity } from 'src/tenant/entities/tenant.entity';
+
 @Entity('quote')
+@Index(['tenantId'])
 export class QuoteEntity {
   @PrimaryGeneratedColumn('uuid')
   id: string;
+
+  @Column({ type: 'uuid', nullable: false })
+  tenantId: string;
+
+  @ManyToOne(() => TenantEntity, { nullable: false, onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'tenantId' })
+  tenant?: TenantEntity;
 
   @Column({ type: 'decimal', precision: 10, scale: 2, nullable: false })
   total: number;
