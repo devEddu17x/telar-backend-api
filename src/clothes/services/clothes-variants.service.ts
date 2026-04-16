@@ -38,7 +38,7 @@ export class ClothesVariantsService {
 
     if (!clothe) {
       throw new NotFoundException(
-        'Clothes item not found or you do not have permission access it',
+        'Clothes item not found or does not belong to this tenant',
       );
     }
 
@@ -99,7 +99,9 @@ export class ClothesVariantsService {
     });
 
     if (!clothe) {
-      throw new NotFoundException('Clothes item not found');
+      throw new NotFoundException(
+        'Clothes item not found or does not belong to this tenant',
+      );
     }
 
     const variant = await this.variantsRepository.findOne({
@@ -143,7 +145,9 @@ export class ClothesVariantsService {
     });
 
     if (!clothe) {
-      throw new NotFoundException('Clothes item not found');
+      throw new NotFoundException(
+        'Clothes item not found or does not belong to this tenant',
+      );
     }
 
     const variant = await this.variantsRepository.findOne({
