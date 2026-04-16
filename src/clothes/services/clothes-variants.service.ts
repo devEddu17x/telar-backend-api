@@ -30,13 +30,16 @@ export class ClothesVariantsService {
   async addVariantToClothes(
     clothesId: string,
     variantData: Variant,
+    tenantId: string,
   ): Promise<ClothesVariantEntity> {
     const clothe = await this.clothesRepository.findOne({
-      where: { id: clothesId },
+      where: { id: clothesId, tenantId },
     });
 
     if (!clothe) {
-      throw new NotFoundException('Clothes item not found');
+      throw new NotFoundException(
+        'Clothes item not found or you do not have permission access it',
+      );
     }
 
     const [size, gender] = await Promise.all([
@@ -59,6 +62,7 @@ export class ClothesVariantsService {
         clothesId: clothesId,
         sizeId: size.id,
         genderId: gender.id,
+        tenantId,
       },
     });
 
@@ -74,6 +78,7 @@ export class ClothesVariantsService {
         sizeId: size.id,
         genderId: gender.id,
         additional: variantData.additional,
+        tenantId,
       });
 
       return await this.variantsRepository.save(newVariant);
@@ -87,9 +92,10 @@ export class ClothesVariantsService {
     clothesId: string,
     variantId: string,
     updateData: UpdateVariantDTO,
+    tenantId: string,
   ): Promise<ClothesVariantEntity> {
     const clothe = await this.clothesRepository.findOne({
-      where: { id: clothesId },
+      where: { id: clothesId, tenantId },
     });
 
     if (!clothe) {
@@ -100,6 +106,7 @@ export class ClothesVariantsService {
       where: {
         id: variantId,
         clothesId: clothesId,
+        tenantId,
       },
     });
 
@@ -110,12 +117,15 @@ export class ClothesVariantsService {
     }
 
     try {
-      await this.variantsRepository.update(variantId, {
-        additional: updateData.additional,
-      });
+      await this.variantsRepository.update(
+        { id: variantId, tenantId },
+        {
+          additional: updateData.additional,
+        },
+      );
 
       return await this.variantsRepository.findOne({
-        where: { id: variantId },
+        where: { id: variantId, tenantId },
       });
     } catch (error) {
       console.log(error);
@@ -126,9 +136,10 @@ export class ClothesVariantsService {
   async deleteVariant(
     clothesId: string,
     variantId: string,
+    tenantId: string,
   ): Promise<{ message: string }> {
     const clothe = await this.clothesRepository.findOne({
-      where: { id: clothesId },
+      where: { id: clothesId, tenantId },
     });
 
     if (!clothe) {
@@ -139,6 +150,7 @@ export class ClothesVariantsService {
       where: {
         id: variantId,
         clothesId: clothesId,
+        tenantId,
       },
     });
 
@@ -159,7 +171,7 @@ export class ClothesVariantsService {
     }
 
     try {
-      await this.variantsRepository.delete(variantId);
+      await this.variantsRepository.delete({ id: variantId, tenantId });
       return {
         message: 'Variant deleted successfully',
       };

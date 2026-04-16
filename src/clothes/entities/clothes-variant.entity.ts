@@ -17,6 +17,9 @@ export class ClothesVariantEntity {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
+  @Column({ type: 'uuid', nullable: false })
+  tenantId: string;
+
   @Column('uuid', { name: 'clothes_id' })
   clothesId: string;
 
