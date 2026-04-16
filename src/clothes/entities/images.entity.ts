@@ -12,6 +12,9 @@ export class ClotheImageEntity {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
+  @Column({ type: 'uuid', nullable: false })
+  tenantId: string;
+
   @Column()
   url: string;
 
