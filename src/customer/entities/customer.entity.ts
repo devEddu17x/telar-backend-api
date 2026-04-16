@@ -4,6 +4,7 @@ import {
   Column,
   CreateDateColumn,
   Entity,
+  Index,
   ManyToOne,
   JoinColumn,
   OneToMany,
@@ -11,6 +12,7 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 
+@Index(['tenantId', 'email'], { unique: true })
 @Entity('customer')
 export class CustomerEntity {
   @PrimaryGeneratedColumn('uuid')
@@ -35,7 +37,7 @@ export class CustomerEntity {
   @Column({ type: 'varchar', length: 20, nullable: true })
   phone: string;
 
-  @Column({ type: 'varchar', length: 255, unique: true, nullable: true })
+  @Column({ type: 'varchar', length: 255, nullable: true })
   email: string;
 
   @Column({ type: 'boolean', default: false })
