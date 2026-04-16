@@ -71,13 +71,17 @@ export class OrderService {
       await queryRunner.connect();
       await queryRunner.startTransaction();
 
-      const address = this.addressRepository.create(dto.address);
+      const address = this.addressRepository.create({
+        ...dto.address,
+        tenantId,
+      });
       const savedAddress = await queryRunner.manager.save(address);
       const order = this.orderRepository.create({
         quoteId: dto.quoteId,
         total: quote.total,
         deliveryDate: new Date(dto.deliveryDate),
         address: savedAddress,
+        tenantId,
       });
       const savedOrder = await queryRunner.manager.save(order);
       await this.quoteService.updateStatus(dto.quoteId, QuoteStatus.APPROVED);
@@ -91,13 +95,13 @@ export class OrderService {
     }
   }
 
-  async getOrders(): Promise<OrderSummary[]> {
-    return this.fetchOrders();
+  async getOrders(tenantId: string): Promise<OrderSummary[]> {
+    return this.fetchOrders(tenantId);
   }
 
-  async getOrderById(id: string): Promise<OrderEntity> {
+  async getOrderById(id: string, tenantId: string): Promise<OrderEntity> {
     const order = await this.orderRepository.findOne({
-      where: { id },
+      where: { id, tenantId },
       relations: [
         'address',
         'quote',
@@ -113,10 +117,14 @@ export class OrderService {
     return order;
   }
 
-  async updateOrderStatus(id: string, status: OrderStatus): Promise<any> {
+  async updateOrderStatus(
+    id: string,
+    status: OrderStatus,
+    tenantId: string,
+  ): Promise<any> {
     try {
       const currentOrder = await this.orderRepository.findOne({
-        where: { id },
+        where: { id, tenantId },
       });
 
       if (!currentOrder) {
@@ -144,7 +152,7 @@ export class OrderService {
       }
 
       const updateResult = await this.orderRepository.update(
-        { id },
+        { id, tenantId },
         { status },
       );
 
@@ -152,7 +160,7 @@ export class OrderService {
         throw new NotFoundException(`Order with ID ${id} not found`);
       }
 
-      return this.orderRepository.findOne({ where: { id } });
+      return this.orderRepository.findOne({ where: { id, tenantId } });
     } catch (error) {
       if (error instanceof NotFoundException) {
         throw error;
@@ -164,10 +172,14 @@ export class OrderService {
     }
   }
 
-  async cancelOrder(id: string, reason: string): Promise<OrderEntity> {
+  async cancelOrder(
+    id: string,
+    reason: string,
+    tenantId: string,
+  ): Promise<OrderEntity> {
     try {
       const existingOrder = await this.orderRepository.findOne({
-        where: { id },
+        where: { id, tenantId },
       });
 
       if (!existingOrder) {
@@ -181,7 +193,7 @@ export class OrderService {
       }
 
       const updateResult = await this.orderRepository.update(
-        { id },
+        { id, tenantId },
         { status: OrderStatus.CANCELLED, cancellationReason: reason },
       );
 
@@ -190,7 +202,7 @@ export class OrderService {
       }
 
       const cancelledOrder = await this.orderRepository.findOne({
-        where: { id },
+        where: { id, tenantId },
       });
       return cancelledOrder;
     } catch (error) {
@@ -204,33 +216,36 @@ export class OrderService {
     }
   }
 
-  async getOrdersByStatus(status: OrderStatus): Promise<OrderSummary[]> {
-    return this.fetchOrders(undefined, status);
+  async getOrdersByStatus(
+    status: OrderStatus,
+    tenantId: string,
+  ): Promise<OrderSummary[]> {
+    return this.fetchOrders(tenantId, undefined, status);
   }
 
   /**
    * Private method that builds and executes the query to fetch orders with all related data
+   * @param tenantId - Filter by tenant ID
    * @param orderId - Optional. Filter by specific order ID
    * @param status - Optional. Filter by specific status
    * @returns Array of orders with summary
    */
   private async fetchOrders(
+    tenantId: string,
     orderId?: string,
     status?: OrderStatus,
   ): Promise<OrderSummary[]> {
     const queryBuilder = this.buildOrderSummaryQuery();
 
+    queryBuilder.where('order.tenantId = :tenantId', { tenantId });
+
     // Apply filters if provided
     if (orderId) {
-      queryBuilder.where('order.id = :orderId', { orderId });
+      queryBuilder.andWhere('order.id = :orderId', { orderId });
     }
 
     if (status) {
-      if (orderId) {
-        queryBuilder.andWhere('order.status = :status', { status });
-      } else {
-        queryBuilder.where('order.status = :status', { status });
-      }
+      queryBuilder.andWhere('order.status = :status', { status });
     }
 
     // Execute query

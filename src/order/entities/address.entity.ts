@@ -1,6 +1,15 @@
-import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
+import { TenantEntity } from 'src/tenant/entities/tenant.entity';
+import {
+  Column,
+  Entity,
+  Index,
+  JoinColumn,
+  ManyToOne,
+  PrimaryGeneratedColumn,
+} from 'typeorm';
 
 @Entity('address')
+@Index(['tenantId'])
 export class AddressEntity {
   @PrimaryGeneratedColumn('uuid')
   id: string;
@@ -16,4 +25,11 @@ export class AddressEntity {
 
   @Column({ type: 'varchar', length: 255, nullable: false })
   street: string;
+
+  @Column('uuid', { name: 'tenant_id' })
+  tenantId: string;
+
+  @ManyToOne(() => TenantEntity, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'tenant_id' })
+  tenant: TenantEntity;
 }

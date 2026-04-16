@@ -1,8 +1,10 @@
 import { QuoteEntity } from 'src/quote/entities/quote.entity';
+import { TenantEntity } from 'src/tenant/entities/tenant.entity';
 import {
   Column,
   CreateDateColumn,
   Entity,
+  Index,
   JoinColumn,
   ManyToOne,
   OneToOne,
@@ -12,6 +14,8 @@ import { AddressEntity } from './address.entity';
 import { OrderStatus } from '../enum/order-status.enum';
 
 @Entity('order')
+@Index(['tenantId'])
+@Index(['status'])
 export class OrderEntity {
   @PrimaryGeneratedColumn('uuid')
   id: string;
@@ -39,14 +43,21 @@ export class OrderEntity {
   @Column('uuid', { name: 'quote_id' })
   quoteId: string;
 
-  @ManyToOne(() => QuoteEntity, { onDelete: 'RESTRICT' })
+  @ManyToOne(() => QuoteEntity, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'quote_id', referencedColumnName: 'id' })
   quote: QuoteEntity;
 
   @Column('uuid', { name: 'address_id' })
   addressId: string;
 
-  @OneToOne(() => AddressEntity, { onDelete: 'RESTRICT' })
+  @OneToOne(() => AddressEntity, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'address_id', referencedColumnName: 'id' })
   address: AddressEntity;
+
+  @Column('uuid', { name: 'tenant_id' })
+  tenantId: string;
+
+  @ManyToOne(() => TenantEntity, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'tenant_id' })
+  tenant: TenantEntity;
 }

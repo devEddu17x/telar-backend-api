@@ -43,7 +43,10 @@ export class CreateOrderDTO {
   address: AddressDTO;
 
   @IsNotEmpty()
-  @IsDateString({}, { message: 'deliveryDate must be a valid date' })
+  @IsDateString(
+    { strict: true },
+    { message: 'deliveryDate must be a valid date in YYYY-MM-DD format' },
+  )
   @IsValidDeliveryDate()
   deliveryDate: string;
 }
