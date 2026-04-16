@@ -31,10 +31,16 @@ export class QuoteService {
     private readonly dataSource: DataSource,
   ) {}
 
-  async createQuote(dto: CreateQuoteDTO): Promise<CreatedClothes> {
+  async createQuote(
+    dto: CreateQuoteDTO,
+    tenantId: string,
+  ): Promise<CreatedClothes> {
     this.validateCustomizations(dto.details);
 
-    const customer = await this.customerService.getCustomerById(dto.customerId);
+    const customer = await this.customerService.getCustomerById(
+      dto.customerId,
+      tenantId,
+    );
     const variantsPrice = await this.getDetailUnitPrice(dto);
     const total = this.calculateTotal(variantsPrice);
     const queryRunner = this.dataSource.createQueryRunner();
