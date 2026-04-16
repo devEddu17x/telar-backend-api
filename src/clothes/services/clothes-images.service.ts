@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { AllowedImagesDTO } from '../dto/images.dto';
@@ -12,6 +13,7 @@ import { ClothesEntity } from '../entities/clothes.entity';
 
 @Injectable()
 export class ClothesImagesService {
+  private readonly logger = new Logger(ClothesImagesService.name);
   constructor(
     @InjectRepository(ClothesEntity)
     private readonly clothesRepository: Repository<ClothesEntity>,
@@ -63,7 +65,9 @@ export class ClothesImagesService {
         preSignedPuts,
       };
     } catch (error) {
-      console.log(error);
+      this.logger.error('Error adding images to clothes item', {
+        cause: error,
+      });
       throw new BadRequestException('Error adding images to clothes item');
     }
   }
@@ -73,16 +77,6 @@ export class ClothesImagesService {
     imageUrl: string,
     tenantId: string,
   ): Promise<{ message: string }> {
-    const clothe = await this.clothesRepository.findOne({
-      where: { id: clothesId, tenantId },
-    });
-
-    if (!clothe) {
-      throw new NotFoundException(
-        'Clothes item not found or you do not have permission access it',
-      );
-    }
-
     const image = await this.imageRepository.findOne({
       where: {
         url: imageUrl,
@@ -107,7 +101,7 @@ export class ClothesImagesService {
       const deleted = await this.storageService.deleteObject(key);
 
       if (!deleted) {
-        console.warn(`Failed to delete image from S3: ${key}`);
+        this.logger.error(`Failed to delete image from S3: ${key}`);
       }
 
       await this.imageRepository.delete(image.id);
@@ -116,7 +110,7 @@ export class ClothesImagesService {
         message: 'Image deleted successfully',
       };
     } catch (error) {
-      console.log(error);
+      this.logger.error('Error deleting image', { cause: error });
       throw new BadRequestException('Error deleting image');
     }
   }
@@ -126,14 +120,6 @@ export class ClothesImagesService {
     imageUrls: string[],
     tenantId: string,
   ): Promise<ClotheImageEntity[]> {
-    const clothe = await this.clothesRepository.findOne({
-      where: { id: clothesId, tenantId },
-    });
-    if (!clothe) {
-      throw new BadRequestException(
-        'Clothes item not found or does not belong to this tenant',
-      );
-    }
     const newImages = imageUrls.map((url) =>
       this.imageRepository.create({ url, clothesId, tenantId }),
     );
