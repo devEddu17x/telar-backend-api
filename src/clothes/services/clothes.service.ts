@@ -88,6 +88,7 @@ export class ClothesService {
           sizeId: sizeIdByEnum.get(v.size)!,
           genderId: genderIdByEnum.get(v.gender)!,
           additional: v.additional,
+          tenantId,
         }),
       );
       const savedVariants: ClothesVariantEntity[] =
@@ -136,6 +137,7 @@ export class ClothesService {
         additional: 0,
         genderId: gender.id,
         sizeId: size.id,
+        tenantId,
       });
       const savedVariant = await this.variantsRepository.save(newVariant);
       return { ...savedClothe, variants: [savedVariant] };
@@ -145,10 +147,14 @@ export class ClothesService {
     }
   }
 
-  async getAllClothes(filterOptions?: ClothesFilterOptions): Promise<any> {
+  async getAllClothes(
+    tenantId: string,
+    filterOptions?: ClothesFilterOptions,
+  ): Promise<any> {
     try {
       const queryBuilder = this.clothesRepository
         .createQueryBuilder('clothes')
+        .where('clothes.tenantId = :tenantId', { tenantId })
         .leftJoinAndSelect('clothes.clothe_image', 'image')
         .select([
           'clothes.id',
@@ -181,12 +187,15 @@ export class ClothesService {
 
   async getClothesById(
     clothesId: string,
+    tenantId: string,
     filterOptions?: ClothesFilterOptions,
   ): Promise<any> {
     let clothe = null;
     try {
       const queryBuilder = this.clothesRepository
         .createQueryBuilder('clothes')
+        .where('clothes.id = :clothesId', { clothesId })
+        .andWhere('clothes.tenantId = :tenantId', { tenantId })
         .leftJoinAndSelect('clothes.clothes_variant', 'variant')
         .leftJoinAndSelect('variant.size', 'size')
         .leftJoinAndSelect('variant.gender', 'gender')
@@ -209,8 +218,7 @@ export class ClothesService {
           'gender.gender',
 
           'image.url',
-        ])
-        .where('clothes.id = :clothesId', { clothesId });
+        ]);
 
       if (filterOptions?.isInEcommerce !== undefined) {
         queryBuilder.andWhere('clothes.isInEcommerce = :isInEcommerce', {
@@ -250,13 +258,16 @@ export class ClothesService {
   async updateClothes(
     clothesId: string,
     updateData: UpdateClothesDTO,
+    tenantId: string,
   ): Promise<ClothesEntity> {
     const clothe = await this.clothesRepository.findOne({
-      where: { id: clothesId },
+      where: { id: clothesId, tenantId },
     });
 
     if (!clothe) {
-      throw new NotFoundException('Clothes item not found');
+      throw new NotFoundException(
+        'Clothes item not found or you do not have permission access it',
+      );
     }
 
     if (Object.keys(updateData).length === 0) {
@@ -264,10 +275,13 @@ export class ClothesService {
     }
 
     try {
-      await this.clothesRepository.update(clothesId, updateData);
+      await this.clothesRepository.update(
+        { id: clothesId, tenantId },
+        updateData,
+      );
 
       return await this.clothesRepository.findOne({
-        where: { id: clothesId },
+        where: { id: clothesId, tenantId },
       });
     } catch (error) {
       console.log(error);
@@ -276,6 +290,7 @@ export class ClothesService {
   }
 
   async searchAndFilterClothes(
+    tenantId: string,
     name?: string,
     description?: string,
     size?: string,
@@ -285,6 +300,7 @@ export class ClothesService {
     try {
       let query = this.clothesRepository
         .createQueryBuilder('clothes')
+        .where('clothes.tenantId = :tenantId', { tenantId })
         .leftJoinAndSelect('clothes.clothes_variant', 'variant')
         .leftJoinAndSelect('variant.size', 'size')
         .leftJoinAndSelect('variant.gender', 'gender')
@@ -303,52 +319,28 @@ export class ClothesService {
           'image.url',
         ]);
 
-      let hasCondition = false;
-
       if (name && name.trim() !== '') {
-        query = query.where('clothes.name ILIKE :name', {
+        query = query.andWhere('clothes.name ILIKE :name', {
           name: `%${name.trim()}%`,
         });
-        hasCondition = true;
       }
 
       if (description && description.trim() !== '') {
-        if (hasCondition) {
-          query = query.andWhere('clothes.description ILIKE :description', {
-            description: `%${description.trim()}%`,
-          });
-        } else {
-          query = query.where('clothes.description ILIKE :description', {
-            description: `%${description.trim()}%`,
-          });
-          hasCondition = true;
-        }
+        query = query.andWhere('clothes.description ILIKE :description', {
+          description: `%${description.trim()}%`,
+        });
       }
 
       if (size && size.trim() !== '') {
-        if (hasCondition) {
-          query = query.andWhere('CAST(size.size AS TEXT) ILIKE :size', {
-            size: size.trim(),
-          });
-        } else {
-          query = query.where('CAST(size.size AS TEXT) ILIKE :size', {
-            size: size.trim(),
-          });
-          hasCondition = true;
-        }
+        query = query.andWhere('CAST(size.size AS TEXT) ILIKE :size', {
+          size: size.trim(),
+        });
       }
 
       if (gender && gender.trim() !== '') {
-        if (hasCondition) {
-          query = query.andWhere('CAST(gender.gender AS TEXT) ILIKE :gender', {
-            gender: gender.trim(),
-          });
-        } else {
-          query = query.where('CAST(gender.gender AS TEXT) ILIKE :gender', {
-            gender: gender.trim(),
-          });
-          hasCondition = true;
-        }
+        query = query.andWhere('CAST(gender.gender AS TEXT) ILIKE :gender', {
+          gender: gender.trim(),
+        });
       }
 
       if (filterOptions?.isInEcommerce !== undefined) {
