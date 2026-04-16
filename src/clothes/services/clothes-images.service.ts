@@ -25,11 +25,13 @@ export class ClothesImagesService {
     tenantId: string,
   ): Promise<{ imageUrls: string[]; preSignedPuts: any[] }> {
     const clothe = await this.clothesRepository.findOne({
-      where: { id: clothesId },
+      where: { id: clothesId, tenantId },
     });
 
     if (!clothe) {
-      throw new NotFoundException('Clothes item not found');
+      throw new NotFoundException(
+        'Clothes item not found or you do not have permission access it',
+      );
     }
 
     try {
@@ -46,7 +48,11 @@ export class ClothesImagesService {
       const keys = preSignedPuts.map((put) => put.key);
       const imageUrls = this.storageService.getImagesUrl(keys);
 
-      const savedImages = await this.addImagesToClothes(clothesId, imageUrls);
+      const savedImages = await this.addImagesToClothes(
+        clothesId,
+        imageUrls,
+        tenantId,
+      );
 
       if (!savedImages || savedImages.length === 0) {
         throw new BadRequestException('Error saving images');
@@ -65,19 +71,23 @@ export class ClothesImagesService {
   async deleteImageFromClothes(
     clothesId: string,
     imageUrl: string,
+    tenantId: string,
   ): Promise<{ message: string }> {
     const clothe = await this.clothesRepository.findOne({
-      where: { id: clothesId },
+      where: { id: clothesId, tenantId },
     });
 
     if (!clothe) {
-      throw new NotFoundException('Clothes item not found');
+      throw new NotFoundException(
+        'Clothes item not found or you do not have permission access it',
+      );
     }
 
     const image = await this.imageRepository.findOne({
       where: {
         url: imageUrl,
         clothesId: clothesId,
+        tenantId,
       },
     });
 
@@ -114,15 +124,18 @@ export class ClothesImagesService {
   async addImagesToClothes(
     clothesId: string,
     imageUrls: string[],
+    tenantId: string,
   ): Promise<ClotheImageEntity[]> {
     const clothe = await this.clothesRepository.findOne({
-      where: { id: clothesId },
+      where: { id: clothesId, tenantId },
     });
     if (!clothe) {
-      throw new BadRequestException('Clothes item not found');
+      throw new BadRequestException(
+        'Clothes item not found or does not belong to this tenant',
+      );
     }
     const newImages = imageUrls.map((url) =>
-      this.imageRepository.create({ url, clothesId }),
+      this.imageRepository.create({ url, clothesId, tenantId }),
     );
     const savedImages = await this.imageRepository.save(newImages);
     if (!savedImages || savedImages.length === 0) {
