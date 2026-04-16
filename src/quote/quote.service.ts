@@ -51,6 +51,7 @@ export class QuoteService {
         QuoteEntity,
         this.quoteRepository.create({
           customerId: customer.id,
+          tenantId,
           total,
         }),
       );
@@ -63,6 +64,7 @@ export class QuoteService {
 
         return this.quoteDetailRepository.create({
           quoteId: newQuote.id,
+          tenantId,
           unitPrice: vp.unitPrice,
           quantity: vp.quantity,
           clothesVariantId: vp.variantId,
@@ -83,14 +85,14 @@ export class QuoteService {
     }
   }
 
-  async getAll(): Promise<QuoteSummary[]> {
-    return this.fetchQuotes();
+  async getAll(tenantId: string): Promise<QuoteSummary[]> {
+    return this.fetchQuotes(tenantId);
   }
 
-  async getQuoteById(id: string): Promise<QuoteEntity> {
+  async getQuoteById(id: string, tenantId: string): Promise<QuoteEntity> {
     try {
       const quote = await this.quoteRepository.findOne({
-        where: { id },
+        where: { id, tenantId },
         relations: [
           'customer',
           'details',
@@ -152,13 +154,16 @@ export class QuoteService {
     }
   }
 
-  async getQuotesByStatus(status: QuoteStatus): Promise<QuoteSummary[]> {
-    return this.fetchQuotes(status);
+  async getQuotesByStatus(
+    status: QuoteStatus,
+    tenantId: string,
+  ): Promise<QuoteSummary[]> {
+    return this.fetchQuotes(tenantId, status);
   }
 
-  async cancelQuote(id: string): Promise<QuoteEntity> {
+  async cancelQuote(id: string, tenantId: string): Promise<QuoteEntity> {
     const existingQuote = await this.quoteRepository.findOne({
-      where: { id },
+      where: { id, tenantId },
     });
 
     if (!existingQuote) {
@@ -172,7 +177,7 @@ export class QuoteService {
     }
 
     const updateResult = await this.quoteRepository.update(
-      { id },
+      { id, tenantId },
       { status: QuoteStatus.CANCELLED },
     );
 
@@ -181,19 +186,23 @@ export class QuoteService {
     }
 
     const cancelledQuote = await this.quoteRepository.findOne({
-      where: { id },
+      where: { id, tenantId },
       relations: ['customer'],
     });
 
     return cancelledQuote;
   }
 
-  async updateQuote(id: string, dto: UpdateQuoteDTO): Promise<CreatedClothes> {
+  async updateQuote(
+    id: string,
+    dto: UpdateQuoteDTO,
+    tenantId: string,
+  ): Promise<CreatedClothes> {
     this.validateCustomizations(dto.details);
     this.validateNoDuplicateVariants(dto.details);
 
     const existingQuote = await this.quoteRepository.findOne({
-      where: { id },
+      where: { id, tenantId },
       relations: ['customer'],
     });
 
@@ -223,12 +232,13 @@ export class QuoteService {
       // 1. Eliminar todos los detalles existentes
       await queryRunner.manager.delete(QuoteDetailEntity, {
         quoteId: id,
+        tenantId,
       });
 
       // 2. Actualizar el total de la cotización
       await queryRunner.manager.update(
         QuoteEntity,
-        { id },
+        { id, tenantId },
         { total: newTotal },
       );
 
@@ -241,6 +251,7 @@ export class QuoteService {
 
         return this.quoteDetailRepository.create({
           quoteId: id,
+          tenantId,
           unitPrice: vp.unitPrice,
           quantity: vp.quantity,
           clothesVariantId: vp.variantId,
@@ -275,14 +286,19 @@ export class QuoteService {
    * @param status - Optional. Filter by specific status
    * @returns Array of quotes with summary
    */
-  private async fetchQuotes(status?: QuoteStatus): Promise<QuoteSummary[]> {
+  private async fetchQuotes(
+    tenantId: string,
+    status?: QuoteStatus,
+  ): Promise<QuoteSummary[]> {
     try {
       // Build base query
       const queryBuilder = this.buildQuoteSummaryQuery();
 
+      queryBuilder.where('quote.tenantId = :tenantId', { tenantId });
+
       // Apply status filter if provided
       if (status) {
-        queryBuilder.where('quote.status = :status', { status });
+        queryBuilder.andWhere('quote.status = :status', { status });
       }
 
       // Execute query
