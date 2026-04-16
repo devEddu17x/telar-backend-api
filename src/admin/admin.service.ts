@@ -1,6 +1,5 @@
 import {
   Injectable,
-  NotImplementedException,
   ForbiddenException,
   InternalServerErrorException,
   Logger,
@@ -21,7 +20,7 @@ export class AdminService {
     private readonly employeeService: EmployeeService,
   ) {}
   async getAllRoles() {
-    throw new NotImplementedException('Not implemented yet');
+    return Object.values(ROLES);
   }
 
   async createEmployee(
