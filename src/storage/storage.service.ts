@@ -26,7 +26,7 @@ export class StorageService {
   buildTempKey(tenantId: string, prendaId: string, filename: string) {
     const ext = filename.includes('.') ? filename.split('.').pop() : 'bin';
     const uuid = randomUUID();
-    return `tenant-id-${tenantId}/cltohe-id-${prendaId}/image-id-${uuid}.${ext}`;
+    return `tenant-id-${tenantId}/clothe-id-${prendaId}/image-id-${uuid}.${ext}`;
   }
   async createPresignedPuts(
     prendaId: string,
