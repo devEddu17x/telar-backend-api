@@ -252,7 +252,10 @@ export class CognitoService {
         );
       }
       this.logger.error(
-        { err: error, email },
+        {
+          err: error,
+          email: maskEmail(email),
+        },
         `Cognito ConfirmSignUp Error [${error.name}]: ${error.message}`,
       );
       throw new InternalServerErrorException('Failed to confirm email');
@@ -333,7 +336,7 @@ export class CognitoService {
       };
     } catch (error: any) {
       this.logger.error(
-        { err: error, email },
+        { err: error, email: maskEmail(email) },
         `Cognito ResendConfirmationCode Error [${error.name}]: ${error.message}`,
       );
       throw new BadRequestException(`Failed to resend code`);
