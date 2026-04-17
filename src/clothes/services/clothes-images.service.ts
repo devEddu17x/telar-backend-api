@@ -1,9 +1,9 @@
 import {
   BadRequestException,
   Injectable,
-  Logger,
   NotFoundException,
 } from '@nestjs/common';
+import { PinoLogger } from 'nestjs-pino';
 import { AllowedImagesDTO } from '../dto/images.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { StorageService } from 'src/storage/storage.service';
@@ -13,14 +13,16 @@ import { ClothesEntity } from '../entities/clothes.entity';
 
 @Injectable()
 export class ClothesImagesService {
-  private readonly logger = new Logger(ClothesImagesService.name);
   constructor(
+    private readonly logger: PinoLogger,
     @InjectRepository(ClothesEntity)
     private readonly clothesRepository: Repository<ClothesEntity>,
     @InjectRepository(ClotheImageEntity)
     private readonly imageRepository: Repository<ClotheImageEntity>,
     private readonly storageService: StorageService,
-  ) {}
+  ) {
+    this.logger.setContext(ClothesImagesService.name);
+  }
   async addNewImagesToClothes(
     clothesId: string,
     images: AllowedImagesDTO[],
@@ -65,9 +67,10 @@ export class ClothesImagesService {
         preSignedPuts,
       };
     } catch (error) {
-      this.logger.error('Error adding images to clothes item', {
-        cause: error,
-      });
+      this.logger.error(
+        { err: error, clothesId, tenantId },
+        'Error adding images to clothes item',
+      );
       throw new BadRequestException('Error adding images to clothes item');
     }
   }
@@ -101,7 +104,10 @@ export class ClothesImagesService {
       const deleted = await this.storageService.deleteObject(key);
 
       if (!deleted) {
-        this.logger.error(`Failed to delete image from S3: ${key}`);
+        this.logger.error(
+          { key, clothesId, tenantId },
+          'Failed to delete image from S3',
+        );
       }
 
       await this.imageRepository.delete(image.id);
@@ -110,7 +116,10 @@ export class ClothesImagesService {
         message: 'Image deleted successfully',
       };
     } catch (error) {
-      this.logger.error('Error deleting image', { cause: error });
+      this.logger.error(
+        { err: error, clothesId, tenantId, imageUrl },
+        'Error deleting image',
+      );
       throw new BadRequestException('Error deleting image');
     }
   }

@@ -3,26 +3,28 @@ import {
   BadRequestException,
   InternalServerErrorException,
   ConflictException,
-  Logger,
   NotFoundException,
 } from '@nestjs/common';
+import { PinoLogger } from 'nestjs-pino';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { TenantEntity } from './entities/tenant.entity';
 import { CreateTenantDto } from './dtos/create-tenant.dto';
 import { CognitoService } from '../auth/services/cognito.service';
 import { EmployeeService } from '../employee/employee.service';
+import { maskEmail } from 'src/utils/mask-email.util';
 
 @Injectable()
 export class TenantService {
-  private readonly logger = new Logger(TenantService.name);
-
   constructor(
+    private readonly logger: PinoLogger,
     @InjectRepository(TenantEntity)
     private readonly tenantRepository: Repository<TenantEntity>,
     private readonly cognitoService: CognitoService,
     private readonly employeeService: EmployeeService,
-  ) {}
+  ) {
+    this.logger.setContext(TenantService.name);
+  }
 
   async createTenant(
     dto: CreateTenantDto,
@@ -60,9 +62,10 @@ export class TenantService {
 
       return savedTenant;
     } catch (error) {
-      this.logger.error('Error creating setup payload, initiating rollback.', {
-        cause: error,
-      });
+      this.logger.error(
+        { err: error, email: maskEmail(userEmail), userSub },
+        'Error creating setup payload, initiating rollback.',
+      );
 
       if (cognitoUpdated) {
         await this.cognitoService.clearTenantId(userEmail);
@@ -72,8 +75,8 @@ export class TenantService {
           await this.tenantRepository.delete(savedTenant.id);
         } catch (rollbackError) {
           this.logger.error(
-            `Critical Rollback Failure: Could not delete tenant ${savedTenant.id}`,
-            { cause: rollbackError },
+            { err: rollbackError, tenantId: savedTenant.id },
+            'Critical Rollback Failure: Could not delete tenant',
           );
         }
       }

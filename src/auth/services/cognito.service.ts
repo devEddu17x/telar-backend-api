@@ -2,10 +2,10 @@ import {
   ConflictException,
   Injectable,
   InternalServerErrorException,
-  Logger,
   BadRequestException,
   NotFoundException,
 } from '@nestjs/common';
+import { PinoLogger } from 'nestjs-pino';
 import {
   CognitoIdentityProviderClient,
   AdminCreateUserCommand,
@@ -30,11 +30,14 @@ import { maskEmail } from '../../utils/mask-email.util';
 
 @Injectable()
 export class CognitoService {
-  private readonly logger = new Logger(CognitoService.name);
   private cognitoClient: CognitoIdentityProviderClient;
   private userPoolId: string;
   private clientId: string;
-  constructor(private readonly configService: ConfigService) {
+  constructor(
+    private readonly logger: PinoLogger,
+    private readonly configService: ConfigService,
+  ) {
+    this.logger.setContext(CognitoService.name);
     this.cognitoClient = new CognitoIdentityProviderClient({
       region: this.configService.get<string>('cognito.region'),
     });
@@ -62,10 +65,10 @@ export class CognitoService {
         throw new ConflictException('User already exists');
       }
 
-      this.logger.error(`AWS Cognito Error [${error.name}]: ${error.message}`);
-      if (error.$fault) {
-        this.logger.error(`Fault: ${error.$fault}, Stack: ${error.stack}`);
-      }
+      this.logger.error(
+        { err: error },
+        `AWS Cognito Error [${error.name}]: ${error.message}`,
+      );
 
       throw new InternalServerErrorException(
         `Could not create user in Cognito`,
@@ -96,10 +99,11 @@ export class CognitoService {
         throw new ConflictException('User already exists');
       }
 
-      this.logger.error(`AWS Cognito Error [${error.name}]: ${error.message}`);
-      if (error.$fault) {
-        this.logger.error(`Fault: ${error.$fault}, Stack: ${error.stack}`);
-      }
+      this.logger.error(
+        { err: error },
+        `AWS Cognito Error [${error.name}]: ${error.message}`,
+      );
+
       throw new InternalServerErrorException(
         `Could not create user in Cognito`,
       );
@@ -119,8 +123,8 @@ export class CognitoService {
         throw new NotFoundException('User does not exist');
       }
       this.logger.error(
-        `Failed to get roles for user: ${maskEmail(email)}`,
-        error.stack,
+        { err: error, email: maskEmail(email) },
+        'Failed to get roles for user',
       );
       throw new InternalServerErrorException('Could not fetch user roles');
     }
@@ -140,8 +144,8 @@ export class CognitoService {
       if (error.name === 'ResourceNotFoundException')
         throw new BadRequestException(`Role ${role} does not exist`);
       this.logger.error(
-        `Failed to assign role ${role} to user ${maskEmail(email)}`,
-        error.stack,
+        { err: error, email: maskEmail(email), role },
+        'Failed to assign role to user',
       );
       throw new InternalServerErrorException('Could not assign role');
     }
@@ -161,8 +165,8 @@ export class CognitoService {
       if (error.name === 'UserNotInGroupException')
         throw new BadRequestException(`User does not have role ${role}`);
       this.logger.error(
-        `Failed to revoke role ${role} from user ${maskEmail(email)}`,
-        error.stack,
+        { err: error, email: maskEmail(email), role },
+        'Failed to revoke role from user',
       );
       throw new InternalServerErrorException('Could not revoke role');
     }
@@ -180,8 +184,8 @@ export class CognitoService {
         throw new NotFoundException('User does not exist');
       }
       this.logger.error(
-        `Failed to disable user in Cognito: ${maskEmail(email)}`,
-        error.stack,
+        { err: error, email: maskEmail(email) },
+        'Failed to disable user in Cognito',
       );
       throw new InternalServerErrorException('Could not disable user');
     }
@@ -199,8 +203,8 @@ export class CognitoService {
         throw new NotFoundException('User does not exist.');
       }
       this.logger.error(
-        `Failed to enable user in Cognito: ${maskEmail(email)}`,
-        error.stack,
+        { err: error, email: maskEmail(email) },
+        'Failed to enable user in Cognito',
       );
       throw new InternalServerErrorException('Could not enable user');
     }
@@ -218,8 +222,8 @@ export class CognitoService {
       const maskedEmail = maskEmail(email);
 
       this.logger.error(
-        `Critical Rollback Failure: Could not delete user ${maskedEmail} from Cognito.`,
-        { cause: error },
+        { err: error, email: maskedEmail },
+        'Critical Rollback Failure: Could not delete user from Cognito',
       );
 
       return { success: false, error };
@@ -248,6 +252,7 @@ export class CognitoService {
         );
       }
       this.logger.error(
+        { err: error, email },
         `Cognito ConfirmSignUp Error [${error.name}]: ${error.message}`,
       );
       throw new InternalServerErrorException('Failed to confirm email');
@@ -269,10 +274,8 @@ export class CognitoService {
       await this.cognitoClient.send(command);
     } catch (error: any) {
       this.logger.error(
-        `Error updating custom:tenant_id for ${maskEmail(email)}`,
-        {
-          cause: error,
-        },
+        { err: error, email: maskEmail(email), tenantId },
+        'Error updating custom:tenant_id',
       );
       throw new InternalServerErrorException(
         'Failed to link tenant to user account',
@@ -302,13 +305,15 @@ export class CognitoService {
         UserAttributes: attributes,
       });
       await this.cognitoClient.send(command);
-      this.logger.debug(
-        `Successfully updated name attributes for ${maskEmail(email)}`,
+      this.logger.info(
+        { email: maskEmail(email) },
+        'Successfully updated name attributes',
       );
     } catch (error: any) {
-      this.logger.error(`Error updating attributes for ${maskEmail(email)}`, {
-        cause: error,
-      });
+      this.logger.error(
+        { err: error, email: maskEmail(email) },
+        'Error updating attributes',
+      );
       throw new InternalServerErrorException(
         'Failed to update user profile in identity provider',
       );
@@ -328,6 +333,7 @@ export class CognitoService {
       };
     } catch (error: any) {
       this.logger.error(
+        { err: error, email },
         `Cognito ResendConfirmationCode Error [${error.name}]: ${error.message}`,
       );
       throw new BadRequestException(`Failed to resend code`);
@@ -344,8 +350,8 @@ export class CognitoService {
       await this.cognitoClient.send(command);
     } catch (error: any) {
       this.logger.error(
-        `Critical Rollback Failure: Could not clear custom:tenant_id for ${maskEmail(email)}`,
-        { cause: error },
+        { err: error, email: maskEmail(email) },
+        'Critical Rollback Failure: Could not clear custom:tenant_id',
       );
     }
   }

@@ -2,8 +2,8 @@ import {
   Injectable,
   ForbiddenException,
   InternalServerErrorException,
-  Logger,
 } from '@nestjs/common';
+import { PinoLogger } from 'nestjs-pino';
 import { ROLES, CREATABLE_ROLES } from 'src/auth/constants/roles';
 import { CreateEmployeeDTO } from 'src/employee/dtos/create-employee.dto';
 import { EmployeeWithRoles } from 'src/employee/interfaces/employee-with-roles.interface';
@@ -14,11 +14,13 @@ import { maskEmail } from 'src/utils/mask-email.util';
 
 @Injectable()
 export class AdminService {
-  private readonly logger = new Logger(AdminService.name);
   constructor(
+    private readonly logger: PinoLogger,
     private readonly authService: AuthService,
     private readonly employeeService: EmployeeService,
-  ) {}
+  ) {
+    this.logger.setContext(AdminService.name);
+  }
   async getAllRoles() {
     return Object.values(ROLES);
   }
@@ -114,15 +116,15 @@ export class AdminService {
       await this.employeeService.updateEmployee(id, { isActive: false } as any);
     } catch (error) {
       this.logger.error(
-        `Failed to disable employee locally, rolling back Cognito state for ${maskEmail(employee.email)}`,
-        error,
+        { err: error, email: maskEmail(employee.email) },
+        'Failed to disable employee locally, rolling back Cognito state',
       );
       try {
         await this.authService.enableUser(employee.email);
       } catch (rollbackError) {
         this.logger.error(
-          `CRITICAL: Failed to rollback Cognito state for ${maskEmail(employee.email)}`,
-          rollbackError,
+          { err: rollbackError, email: maskEmail(employee.email) },
+          'CRITICAL: Failed to rollback Cognito state',
         );
       }
       throw new InternalServerErrorException(
@@ -171,15 +173,15 @@ export class AdminService {
       await this.employeeService.updateEmployee(id, { isActive: true } as any);
     } catch (error) {
       this.logger.error(
-        `Failed to reactivate employee locally, rolling back Cognito state for ${maskEmail(employee.email)}`,
-        error,
+        { err: error, email: maskEmail(employee.email) },
+        'Failed to reactivate employee locally, rolling back Cognito state',
       );
       try {
         await this.authService.disableUser(employee.email);
       } catch (rollbackError) {
         this.logger.error(
-          `CRITICAL: Failed to rollback Cognito state for ${maskEmail(employee.email)}`,
-          rollbackError,
+          { err: rollbackError, email: maskEmail(employee.email) },
+          'CRITICAL: Failed to rollback Cognito state',
         );
       }
       throw new InternalServerErrorException(
