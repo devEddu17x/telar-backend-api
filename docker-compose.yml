@@ -1,9 +1,9 @@
 services:
   api:
     image: nest-api
-    container_name: saas-api
+    build: .
     ports:
-      - '3000:3000'
+      - '${API_PORT:-3000}:3000'
     env_file:
       - .env.local
     environment:
@@ -15,12 +15,14 @@ services:
       - app_db
   app_db:
     image: 'postgres:latest'
+    env_file:
+      - .env.local
     environment:
-      POSTGRES_USER: app_user
-      POSTGRES_PASSWORD: app_password
-      POSTGRES_DB: app_db
+      POSTGRES_USER: '${DB_USERNAME:-app_user}'
+      POSTGRES_PASSWORD: '${DB_PASSWORD:-app_password}'
+      POSTGRES_DB: '${DB_NAME:-app_db}'
     ports:
-      - 5432:5432
+      - '${DB_PORT:-5432}:5432'
     networks:
       - app_network
     restart: no
@@ -41,4 +43,5 @@ services:
 
 networks:
   app_network:
+    name: textile_app_network
     driver: bridge
