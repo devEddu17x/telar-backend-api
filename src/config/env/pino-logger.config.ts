@@ -69,7 +69,8 @@ export const pinoLoggerConfig = registerAs('pino-logger', (): Params => {
         colorize: true,
         singleLine: true,
         translateTime: 'SYS:hh:MM:ss TT Z',
-        ignore: 'pid,hostname',
+        messageFormat: '[{context}] {msg}',
+        ignore: 'pid,hostname,context',
       },
     });
   } else {
