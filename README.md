@@ -22,52 +22,63 @@
   <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
   [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
 
-## Description
+## Textile SaaS Backend
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+API principal para el sistema SaaS Multitenant, construido con NestJS, PostgreSQL y AWS Cognito.
 
-## Installation
+## 1. Configuración Inicial (Rapida)
 
 ```bash
+# 1. Instalar dependencias (Obligatorio usar pnpm)
 $ pnpm install
+
+# 2. Configurar variables de entorno
+$ cp .env.example .env.local
+# Y rellena los valores necesarios en .env.local
 ```
 
-## Running the app
+## 2. Guía de Uso de Docker Compose
+
+El proyecto cuenta con dos entornos de Docker para diferentes escenarios.
+
+### Opción A: Entorno de Desarrollo (Para trabajar en el Backend)
+
+**Archivo:** `docker-compose.dev.yml`
+
+Este entorno levanta **únicamente la infraestructura** (Base de Datos PostgreSQL, Loki y Grafana). La API de NestJS queda libre para que la ejecutes tú localmente y así aproveches el _Hot-Reload_ (recarga en caliente).
 
 ```bash
-# development
-$ pnpm run start
+# 1. Levantar infraestructura en segundo plano
+$ docker compose -f docker-compose.dev.yml up -d
 
-# watch mode
-$ pnpm run start:dev
-
-# production mode
-$ pnpm run start:prod
+# 2. Iniciar la API localmente (lee el .env.local de forma automática)
+$ pnpm start:dev
 ```
 
-## Test
+### Opción B: Entorno Completo (Para Frontends o Pruebas de Integración)
+
+**Archivo:** `docker-compose.yml` (por defecto)
+
+Este entorno Dockeriza **TODO el proyecto**, incluyendo la propia API de NestJS. Es ideal para cuando otras áreas (ej. Frontend) solo quieren levantar la API y consumirla sin tener que lidiar con comandos de Node.js o el código fuente directo.
+
+> **⚠️ IMPORTANTE (Solo para desarrollo local):** Si vas a ejecutar este entorno en tu máquina y requieres conexión a los servicios de AWS (como Cognito o S3), asegúrate de descomentar la línea del volumen de AWS en el archivo `docker-compose.yml` (`- ~/.aws:/home/nestjs/.aws:ro`). Esto inyectará tus credenciales locales de AWS CLI al contenedor. En producción (AWS ECS/EKS/EC2) esto NO es necesario, ya que los roles se inyectan automáticamente.
 
 ```bash
-# unit tests
-$ pnpm run test
+# Levantar el ecosistema completo inyectando las variables del entorno local
+$ docker compose --env-file .env.local up -d --build
 
-# e2e tests
-$ pnpm run test:e2e
-
-# test coverage
-$ pnpm run test:cov
+# Ver únicamente los logs generados por la API
+$ docker compose logs -f api
 ```
 
-## Support
+### Limpiar Contenedores
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+Para apagar y remover los contenedores de cualquier entorno:
 
-## Stay in touch
+```bash
+# Si usaste la opción A (Backend Dev)
+$ docker compose -f docker-compose.dev.yml down
 
-- Author - [Kamil Myśliwiec](https://kamilmysliwiec.com)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
-
-## License
-
-Nest is [MIT licensed](LICENSE).
+# Si usaste la opción B (Completo / Frontend)
+$ docker compose down
+```
