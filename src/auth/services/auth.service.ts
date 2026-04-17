@@ -30,7 +30,7 @@ export class AuthService {
       await this.cognitoService.addRole(params.email, ROLES.OWNER);
     } catch (error) {
       this.logger.error(
-        'Error assigning owner role  natively. Cognito will rolled back. (removing user)',
+        'Error assigning owner role locally. Cognito will be rolled back. (removing user)',
         { cause: error },
       );
       const deleteResult = await this.cognitoService.deleteUser(params.email);
@@ -54,7 +54,7 @@ export class AuthService {
       return employeeResult;
     } catch (error) {
       this.logger.error(
-        'Error creating owner in database. Cognito user will rolled back.',
+        'Error creating owner in database. Cognito user will be rolled back.',
         { cause: error },
       );
       const deleteResult = await this.cognitoService.deleteUser(params.email);
@@ -81,7 +81,7 @@ export class AuthService {
       await this.cognitoService.addRole(sub, role);
     } catch (error) {
       this.logger.error(
-        'Error assigning role to employee. Cognito user will rolled back.',
+        'Error assigning role to employee. Cognito user will be rolled back.',
         { cause: error },
       );
       const deleteResult = await this.cognitoService.deleteUser(params.email);
@@ -107,7 +107,7 @@ export class AuthService {
       return employeeResult;
     } catch (error) {
       this.logger.error(
-        'Error creating employee in database. Cognito user will rolled back.',
+        'Error creating employee in database. Cognito user will be rolled back.',
         { cause: error },
       );
       const deleteResult = await this.cognitoService.deleteUser(params.email);
