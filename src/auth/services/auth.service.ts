@@ -30,7 +30,7 @@ export class AuthService {
       await this.cognitoService.addRole(params.email, ROLES.OWNER);
     } catch (error) {
       this.logger.error(
-        'Error assigning owner role locally. Cognito will be rolled back. (removing user)',
+        'Error assigning owner role in database. Cognito will be rolled back. (removing user)',
         { cause: error },
       );
       const deleteResult = await this.cognitoService.deleteUser(params.email);
