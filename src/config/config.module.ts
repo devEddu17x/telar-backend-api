@@ -1,6 +1,11 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule as NestConfigModule } from '@nestjs/config';
+import {
+  ConfigService,
+  ConfigModule as NestConfigModule,
+} from '@nestjs/config';
 import * as config from './env';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { LoggerModule } from 'nestjs-pino';
 @Module({
   imports: [
     NestConfigModule.forRoot({
@@ -19,6 +24,18 @@ import * as config from './env';
         config.emailConfig,
         config.cognitoConfig,
       ],
+    }),
+    LoggerModule.forRootAsync({
+      useFactory: (configService: ConfigService) => {
+        return configService.get('pino-logger');
+      },
+      inject: [ConfigService],
+    }),
+    TypeOrmModule.forRootAsync({
+      useFactory: (configService: ConfigService) => {
+        return configService.get('typeorm');
+      },
+      inject: [ConfigService],
     }),
   ],
 })
