@@ -18,7 +18,7 @@ async function bootstrap() {
       forbidNonWhitelisted: true,
     }),
   );
-
-  await app.listen(3000);
+  const PORT = configService.get('api').port;
+  await app.listen(PORT);
 }
 bootstrap();
