@@ -24,11 +24,12 @@ ENV API_PORT=3000
 ENV API_PREFIX=api/v1
 
 RUN addgroup -S nestjs && adduser -S nestjs -G nestjs
-USER nestjs
 
-COPY --from=prod-deps /app/node_modules ./node_modules
-COPY --from=build /app/dist ./dist
-COPY package.json ./
+COPY --chown=nestjs:nestjs --from=prod-deps /app/node_modules ./node_modules
+COPY --chown=nestjs:nestjs --from=build /app/dist ./dist
+COPY --chown=nestjs:nestjs package.json ./
+
+USER nestjs
 
 EXPOSE 3000
 
