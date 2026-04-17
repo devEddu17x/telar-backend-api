@@ -26,11 +26,6 @@ export class AuthService {
   async createOwner(params: CognitoOwnerParams) {
     const cognitoResult = await this.cognitoService.signUpUser(params);
     const sub = cognitoResult.user.UserSub;
-
-    if (!sub) {
-      throw new InternalServerErrorException('Could not create user');
-    }
-
     try {
       await this.cognitoService.addRole(params.email, ROLES.OWNER);
     } catch (error) {
@@ -82,11 +77,6 @@ export class AuthService {
     );
 
     const sub = cognitoResult.user?.User?.Username;
-
-    if (!sub) {
-      throw new InternalServerErrorException('Could not create user');
-    }
-
     try {
       await this.cognitoService.addRole(sub, role);
     } catch (error) {
