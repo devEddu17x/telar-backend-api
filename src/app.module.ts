@@ -12,8 +12,6 @@ import { OrderModule } from './order/order.module';
 import { CartModule } from './cart/cart.module';
 import { AuthModule } from './auth/auth.module';
 import { TenantModule } from './tenant/tenant.module';
-import { LogsTestModule } from './logs-test/logs-test.module';
-
 @Module({
   imports: [
     AuthModule,
@@ -27,7 +25,6 @@ import { LogsTestModule } from './logs-test/logs-test.module';
     OrderModule,
     CartModule,
     TenantModule,
-    LogsTestModule,
   ],
 
   controllers: [AppController],
