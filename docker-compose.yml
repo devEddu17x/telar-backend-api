@@ -1,31 +1,57 @@
 services:
-  # application database
-  app_db:
-    image: 'postgres:latest'
-    environment:
-      POSTGRES_USER: app_user
-      POSTGRES_PASSWORD: app_password
-      POSTGRES_DB: app_db
+  api:
+    image: nest-api
+    build: .
     ports:
-      - 5433:5432
+      - '${API_PORT:-3000}:3000'
+    env_file:
+      - .env.local
+    environment:
+      - DB_HOST=app_db
+      - DB_PORT=5432
+      - LOKI_HOST=http://loki:3100
+    # Uncommment for local development with AWS credentials
+    volumes:
+      - ~/.aws:/home/nestjs/.aws:ro
     networks:
       - app_network
-    restart: no
+    depends_on:
+      - app_db
+      - loki
+  app_db:
+    image: 'postgres:latest'
+    env_file:
+      - .env.local
+    environment:
+      POSTGRES_USER: '${DB_USERNAME:-app_user}'
+      POSTGRES_PASSWORD: '${DB_PASSWORD:-app_password}'
+      POSTGRES_DB: '${DB_NAME:-app_db}'
+    ports:
+      - '${DB_PORT:-5432}:5432'
+    networks:
+      - app_network
+    restart: 'no'
 
   loki:
     image: grafana/loki:3.6.2
     ports:
       - '3100:3100'
-    command: -config.file=/etc/loki/local-config.yaml
+    command: -config.file=/etc/loki/local-config.yaml -log.level=warn
+    networks:
+      - app_network
   grafana:
     image: grafana/grafana:latest
     ports:
       - '3001:3000'
     environment:
       - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_LOG_LEVEL=warn
     depends_on:
       - loki
+    networks:
+      - app_network
 
 networks:
   app_network:
+    name: textile_app_network
     driver: bridge
