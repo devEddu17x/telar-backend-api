@@ -4,15 +4,15 @@ import {
   Logger,
   Inject,
   forwardRef,
+  InternalServerErrorException,
 } from '@nestjs/common';
 import { CognitoService } from './cognito.service';
 import {
   CognitoOwnerParams,
   CognitoEmployeeParams,
 } from '../interfaces/cognito-user-interface';
-import { CREATABLE_ROLES } from '../constants/roles';
+import { CREATABLE_ROLES, ROLES } from '../constants/roles';
 import { EmployeeService } from 'src/employee/employee.service';
-import { maskEmail } from '../../utils/mask-email.util';
 
 @Injectable()
 export class AuthService {
@@ -24,11 +24,24 @@ export class AuthService {
   ) {}
 
   async createOwner(params: CognitoOwnerParams) {
-    const cognitoResult = await this.cognitoService.createOwner(params);
+    const cognitoResult = await this.cognitoService.signUpUser(params);
+    const sub = cognitoResult.user.UserSub;
+    try {
+      await this.cognitoService.addRole(params.email, ROLES.OWNER);
+    } catch (error) {
+      this.logger.error(
+        'Error assigning owner role in database. Cognito will be rolled back. (removing user)',
+        { cause: error },
+      );
+      const deleteResult = await this.cognitoService.deleteUser(params.email);
+      const message = deleteResult.success
+        ? 'Cognito user was rolled back successfully.'
+        : 'Failed to roll back Cognito user after role assignment failure.';
+      this.logger.error(message, { cause: deleteResult.error });
+      throw new InternalServerErrorException('Could not create user');
+    }
 
     try {
-      const sub = cognitoResult.user.UserSub;
-
       const employeeData = {
         email: params.email,
         names: params.name,
@@ -40,18 +53,15 @@ export class AuthService {
       );
       return employeeResult;
     } catch (error) {
-      try {
-        await this.cognitoService.deleteUser(params.email);
-      } catch (rollbackError) {
-        this.logger.error(
-          `Critical Rollback Failure: Could not delete user ${maskEmail(params.email)} from Cognito after local DB failure.`,
-          { cause: rollbackError },
-        );
-      }
       this.logger.error(
-        'Error creating owner locally. Cognito user was rolled back (if possible).',
+        'Error creating owner in database. Cognito user will be rolled back.',
         { cause: error },
       );
+      const deleteResult = await this.cognitoService.deleteUser(params.email);
+      const message = deleteResult.success
+        ? 'Cognito user was rolled back successfully.'
+        : 'Failed to roll back Cognito user after failed database user creation.';
+      this.logger.error(message, { cause: deleteResult.error });
       throw new BadRequestException('Could not create user');
     }
   }
@@ -61,13 +71,26 @@ export class AuthService {
     role: CREATABLE_ROLES,
     tenantId: string,
   ) {
-    const cognitoResult = await this.cognitoService.createEmployee(
+    const cognitoResult = await this.cognitoService.adminCreateUser(
       params,
-      role,
       tenantId,
     );
 
     const sub = cognitoResult.user?.User?.Username;
+    try {
+      await this.cognitoService.addRole(sub, role);
+    } catch (error) {
+      this.logger.error(
+        'Error assigning role to employee. Cognito user will be rolled back.',
+        { cause: error },
+      );
+      const deleteResult = await this.cognitoService.deleteUser(params.email);
+      const message = deleteResult.success
+        ? 'Cognito user was rolled back successfully.'
+        : `Failed to roll back Cognito user after failed assigning role ${role} to employee.`;
+      this.logger.error(message, { cause: deleteResult.error });
+      throw new InternalServerErrorException('Could not create user');
+    }
 
     try {
       const employeeData = {
@@ -83,18 +106,15 @@ export class AuthService {
       );
       return employeeResult;
     } catch (error) {
-      try {
-        await this.cognitoService.deleteUser(params.email);
-      } catch (rollbackError) {
-        this.logger.error(
-          `Critical Rollback Failure: Could not delete user ${maskEmail(params.email)} from Cognito after local DB failure.`,
-          { cause: rollbackError },
-        );
-      }
       this.logger.error(
-        'Error creating employee locally. Cognito user was rolled back.',
+        'Error creating employee in database. Cognito user will be rolled back.',
         { cause: error },
       );
+      const deleteResult = await this.cognitoService.deleteUser(params.email);
+      const message = deleteResult.success
+        ? 'Cognito user was rolled back successfully.'
+        : 'Failed to roll back Cognito user after failed database user creation.';
+      this.logger.error(message, { cause: deleteResult.error });
       throw new BadRequestException('Could not create user');
     }
   }
