@@ -22,7 +22,6 @@ import {
   AdminRemoveUserFromGroupCommand,
 } from '@aws-sdk/client-cognito-identity-provider';
 import { ConfigService } from '@nestjs/config';
-import { CREATABLE_ROLES, ROLES } from '../constants/roles';
 import {
   CognitoOwnerParams,
   CognitoEmployeeParams,
@@ -43,7 +42,7 @@ export class CognitoService {
     this.clientId = this.configService.get<string>('cognito.clientId');
   }
 
-  async createOwner(params: CognitoOwnerParams) {
+  async signUpUser(params: CognitoOwnerParams) {
     try {
       const signUpCommand = new SignUpCommand({
         ClientId: this.clientId,
@@ -57,15 +56,7 @@ export class CognitoService {
       });
 
       const user = await this.cognitoClient.send(signUpCommand);
-
-      const addToGroupCommand = new AdminAddUserToGroupCommand({
-        UserPoolId: this.userPoolId,
-        Username: params.email,
-        GroupName: ROLES.OWNER,
-      });
-      const addToGroupResult = await this.cognitoClient.send(addToGroupCommand);
-
-      return { user, addToGroupResult };
+      return { user };
     } catch (error: any) {
       if (error.name === 'UsernameExistsException') {
         throw new ConflictException('User already exists');
@@ -76,15 +67,13 @@ export class CognitoService {
         this.logger.error(`Fault: ${error.$fault}, Stack: ${error.stack}`);
       }
 
-      throw new InternalServerErrorException(`Could not create user`);
+      throw new InternalServerErrorException(
+        `Could not create user in Cognito`,
+      );
     }
   }
 
-  async createEmployee(
-    params: CognitoEmployeeParams,
-    role: CREATABLE_ROLES,
-    tenantId: string,
-  ) {
+  async adminCreateUser(params: CognitoEmployeeParams, tenantId: string) {
     try {
       const commandInput: any = {
         UserPoolId: this.userPoolId,
@@ -101,15 +90,7 @@ export class CognitoService {
 
       const createUserCommand = new AdminCreateUserCommand(commandInput);
       const user = await this.cognitoClient.send(createUserCommand);
-
-      const addToGroupCommand = new AdminAddUserToGroupCommand({
-        UserPoolId: this.userPoolId,
-        Username: user.User?.Username,
-        GroupName: role,
-      });
-      const addToGroupResult = await this.cognitoClient.send(addToGroupCommand);
-
-      return { user, addToGroupResult };
+      return { user };
     } catch (error: any) {
       if (error.name === 'UsernameExistsException') {
         throw new ConflictException('User already exists');
@@ -119,7 +100,9 @@ export class CognitoService {
       if (error.$fault) {
         this.logger.error(`Fault: ${error.$fault}, Stack: ${error.stack}`);
       }
-      throw new InternalServerErrorException(`Could not create user`);
+      throw new InternalServerErrorException(
+        `Could not create user in Cognito`,
+      );
     }
   }
 
@@ -230,21 +213,16 @@ export class CognitoService {
         Username: email,
       });
       await this.cognitoClient.send(command);
+      return { success: true };
     } catch (error: any) {
-      if (error.name === 'UserNotFoundException') {
-        throw new NotFoundException('User does not exist.');
-      }
       const maskedEmail = maskEmail(email);
 
       this.logger.error(
-        `Failed to rollback/delete user in Cognito: ${maskedEmail}`,
-        {
-          cause: error,
-        },
+        `Critical Rollback Failure: Could not delete user ${maskedEmail} from Cognito.`,
+        { cause: error },
       );
-      throw new InternalServerErrorException(
-        `Rollback failed for user: ${maskedEmail}`,
-      );
+
+      return { success: false, error };
     }
   }
 
