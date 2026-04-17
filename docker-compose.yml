@@ -11,7 +11,8 @@ services:
       - DB_PORT=5432
       - LOKI_HOST=http://loki:3100
     # Uncommment for local development with AWS credentials
-    # - ~/.aws:/home/nestjs/.aws:ro
+    volumes:
+      - ~/.aws:/home/nestjs/.aws:ro
     networks:
       - app_network
     depends_on:
