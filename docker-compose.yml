@@ -29,7 +29,7 @@ services:
       - '${DB_PORT:-5432}:5432'
     networks:
       - app_network
-    restart: no
+    restart: 'no'
 
   loki:
     image: grafana/loki:3.6.2
