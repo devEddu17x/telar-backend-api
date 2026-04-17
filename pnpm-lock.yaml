@@ -70,9 +70,6 @@ importers:
       pino-http:
         specifier: ^11.0.0
         version: 11.0.0
-      pino-loki:
-        specifier: ^2.6.0
-        version: 2.6.0
       pino-pretty:
         specifier: ^13.1.1
         version: 13.1.1
@@ -6257,13 +6254,6 @@ packages:
       {
         integrity: sha512-wqg5XIAGRRIWtTk8qPGxkbrfiwEWz1lgedVLvhLALudKXvg1/L2lTFgTGPJ4Z2e3qcRmxoFxDuSdMdMGNM6I1g==,
       }
-
-  pino-loki@2.6.0:
-    resolution:
-      {
-        integrity: sha512-Qy+NeIdb0YmZe/M5mgnO5aGaAyVaeqgwn45T6VajhRXZlZVfGe1YNYhFa9UZyCeNFAPGaUkD2e9yPGjx+2BBYA==,
-      }
-    hasBin: true
 
   pino-pretty@13.1.1:
     resolution:
@@ -12750,11 +12740,6 @@ snapshots:
       pino: 10.1.0
       pino-std-serializers: 7.0.0
       process-warning: 5.0.0
-
-  pino-loki@2.6.0:
-    dependencies:
-      pino-abstract-transport: 2.0.0
-      pump: 3.0.3
 
   pino-pretty@13.1.1:
     dependencies:
