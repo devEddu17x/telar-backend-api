@@ -9,10 +9,14 @@ services:
     environment:
       - DB_HOST=app_db
       - DB_PORT=5432
+      - LOKI_HOST=http://loki:3100
+    # Uncommment for local development with AWS credentials
+    # - ~/.aws:/home/nestjs/.aws:ro
     networks:
       - app_network
     depends_on:
       - app_db
+      - loki
   app_db:
     image: 'postgres:latest'
     env_file:
@@ -31,15 +35,20 @@ services:
     image: grafana/loki:3.6.2
     ports:
       - '3100:3100'
-    command: -config.file=/etc/loki/local-config.yaml
+    command: -config.file=/etc/loki/local-config.yaml -log.level=warn
+    networks:
+      - app_network
   grafana:
     image: grafana/grafana:latest
     ports:
       - '3001:3000'
     environment:
       - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_LOG_LEVEL=warn
     depends_on:
       - loki
+    networks:
+      - app_network
 
 networks:
   app_network:
