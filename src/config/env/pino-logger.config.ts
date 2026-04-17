@@ -3,15 +3,10 @@ import { Params } from 'nestjs-pino';
 import type { LoggerOptions } from 'pino';
 
 export const pinoLoggerConfig = registerAs('pino-logger', (): Params => {
-  const {
-    NODE_ENV,
-    LOKI_HOST = 'http://localhost:3100',
-    ENABLE_LOKI = 'true', // Enable Loki by default
-  } = process.env;
+  const { NODE_ENV } = process.env;
   const isDevelopment = NODE_ENV !== 'production';
-  const shouldUseLoki = ENABLE_LOKI === 'true';
   console.log(
-    `Pino Logger Config - Environment: ${NODE_ENV}, Use Loki: ${shouldUseLoki}, isDevelopment: ${isDevelopment}`,
+    `Pino Logger Config - Environment: ${NODE_ENV}, isDevelopment: ${isDevelopment}`,
   );
   // Base configuration for Pino HTTP
   const baseConfig: Params = {
@@ -62,7 +57,7 @@ export const pinoLoggerConfig = registerAs('pino-logger', (): Params => {
     } as LoggerOptions,
   };
 
-  // Configure transports based on environment and if Loki is enabled
+  // Configure transports based on environment
   const targets: any[] = [];
 
   // In development: add pino-pretty for readable logs
@@ -73,8 +68,9 @@ export const pinoLoggerConfig = registerAs('pino-logger', (): Params => {
       options: {
         colorize: true,
         singleLine: true,
-        translateTime: 'HH:MM:ss Z',
-        ignore: 'pid,hostname',
+        translateTime: 'SYS:hh:MM:ss TT Z',
+        messageFormat: '[{context}] {msg}',
+        ignore: 'pid,hostname,context',
       },
     });
   } else {
@@ -84,27 +80,6 @@ export const pinoLoggerConfig = registerAs('pino-logger', (): Params => {
       target: 'pino/file',
       options: {
         destination: 1, // stdout
-      },
-    });
-  }
-
-  // Add Loki if enabled
-  if (shouldUseLoki) {
-    targets.push({
-      level: isDevelopment ? 'debug' : 'info',
-      target: 'pino-loki',
-      options: {
-        batching: true,
-        interval: 5,
-        host: LOKI_HOST,
-        labels: {
-          application: 'backend-agile-project',
-          environment: NODE_ENV || 'development',
-        },
-        basicAuth: {
-          username: process.env.LOKI_USERNAME || '',
-          password: process.env.LOKI_PASSWORD || '',
-        },
       },
     });
   }

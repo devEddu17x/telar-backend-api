@@ -10,19 +10,21 @@ import { EmployeeEntity } from './entities/employee.entity';
 import { Repository } from 'typeorm/repository/Repository';
 import { IsNull } from 'typeorm';
 import { UpdateEmployeeDTO } from './dtos/update-employee.dto';
-import { Logger } from '@nestjs/common';
+import { PinoLogger } from 'nestjs-pino';
 import { maskEmail } from 'src/utils/mask-email.util';
 import { AuthService } from 'src/auth/services/auth.service';
 
 @Injectable()
 export class EmployeeService {
-  private readonly logger = new Logger(EmployeeService.name);
   constructor(
+    private readonly logger: PinoLogger,
     @InjectRepository(EmployeeEntity)
     private readonly employeeRepository: Repository<EmployeeEntity>,
     @Inject(forwardRef(() => AuthService))
     private readonly authService: AuthService,
-  ) {}
+  ) {
+    this.logger.setContext(EmployeeService.name);
+  }
 
   async createEmployee(
     sub: string,
@@ -37,7 +39,10 @@ export class EmployeeService {
       });
       return await this.employeeRepository.save(employee);
     } catch (error) {
-      this.logger.error('Error creating employee', { cause: error });
+      this.logger.error(
+        { err: error, sub, tenantId },
+        'Error creating employee',
+      );
       throw error;
     }
   }
@@ -54,7 +59,8 @@ export class EmployeeService {
     const employee = await this.employeeRepository.findOneBy({ sub });
     if (!employee) {
       this.logger.error(
-        `Employee not found for sub ending with ${sub.slice(-6)}. Possible sync issue between Cognito and local DB.`,
+        { sub: sub.slice(-6) },
+        'Employee not found for sub. Possible sync issue between Cognito and local DB.',
       );
       throw new NotFoundException('Employee sub not found.');
     }
@@ -65,7 +71,8 @@ export class EmployeeService {
     const employee = await this.employeeRepository.findOneBy({ email });
     if (!employee) {
       this.logger.error(
-        `Employee not found for email ${maskEmail(email)}. Possible sync issue between Cognito and local DB.`,
+        { email: maskEmail(email) },
+        'Employee not found for email. Possible sync issue between Cognito and local DB.',
       );
       throw new NotFoundException('Employee email not found.');
     }
@@ -108,7 +115,7 @@ export class EmployeeService {
         throw new BadRequestException('Employee not found');
       }
     } catch (error) {
-      this.logger.error('Error deleting employee or does not exist');
+      this.logger.error({ id }, 'Error deleting employee or does not exist');
       throw new BadRequestException(
         'Error deleting employee or does not exist',
       );
@@ -158,8 +165,8 @@ export class EmployeeService {
         );
       } catch (error) {
         this.logger.error(
-          `Failed to update Cognito attributes for ${maskEmail(email)}, rolling back local database`,
-          { cause: error },
+          { err: error, email: maskEmail(email) },
+          'Failed to update Cognito attributes, rolling back local database',
         );
         await this.updateEmployee(employee.id, originalLocalData);
         throw error;

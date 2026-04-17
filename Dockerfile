@@ -22,8 +22,10 @@ WORKDIR /app
 ENV NODE_ENV=production
 ENV API_PORT=3000
 ENV API_PREFIX=api/v1
+ENV TZ=America/Lima
 
-RUN addgroup -S nestjs && adduser -S nestjs -G nestjs
+RUN apk add --no-cache tzdata && \
+    addgroup -S nestjs && adduser -S nestjs -G nestjs
 
 COPY --chown=nestjs:nestjs --from=prod-deps /app/node_modules ./node_modules
 COPY --chown=nestjs:nestjs --from=build /app/dist ./dist
