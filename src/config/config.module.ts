@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, Global } from '@nestjs/common';
 import {
   ConfigService,
   ConfigModule as NestConfigModule,
@@ -6,6 +6,8 @@ import {
 import * as config from './env';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { LoggerModule } from 'nestjs-pino';
+
+@Global()
 @Module({
   imports: [
     NestConfigModule.forRoot({
@@ -38,5 +40,6 @@ import { LoggerModule } from 'nestjs-pino';
       inject: [ConfigService],
     }),
   ],
+  exports: [LoggerModule],
 })
 export class ConfigModule {}
