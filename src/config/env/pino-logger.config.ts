@@ -12,7 +12,9 @@ export const pinoLoggerConfig = registerAs('pino-logger', (): Params => {
   const baseConfig: Params = {
     pinoHttp: {
       level: isDevelopment ? 'debug' : 'info',
-      autoLogging: true,
+      autoLogging: {
+        ignore: (req) => (req.url as string)?.includes('/health'),
+      },
       quietReqLogger: true,
       customProps: (req: any) => ({
         context: 'HTTP',
