@@ -466,4 +466,31 @@ export class QuoteService {
       );
     }
   }
+
+  async deleteQuote(
+    id: string,
+    tenantId: string,
+  ): Promise<{ message: string }> {
+    const existingQuote = await this.quoteRepository.findOne({
+      where: { id, tenantId },
+    });
+
+    if (!existingQuote) {
+      throw new NotFoundException(`Quote with ID ${id} not found.`);
+    }
+
+    if (existingQuote.status === QuoteStatus.APPROVED) {
+      throw new BadRequestException(
+        'Cannot delete an APPROVED quote as it may be associated with an active Order. Cancel the associated order first if needed.',
+      );
+    }
+
+    try {
+      await this.quoteRepository.softDelete({ id, tenantId });
+      return { message: 'Quote successfully deleted' };
+    } catch (error) {
+      console.log(error);
+      throw new BadRequestException('Error deleting quote');
+    }
+  }
 }

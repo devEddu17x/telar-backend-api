@@ -9,6 +9,7 @@ import {
   Post,
   Put,
   Query,
+  Delete,
   UseGuards,
 } from '@nestjs/common';
 import { QuoteService } from './quote.service';
@@ -78,5 +79,13 @@ export class QuoteController {
     @CurrentUser() user: any,
   ): Promise<QuoteEntity> {
     return this.quoteService.cancelQuote(id, user.tenantId);
+  }
+
+  @Delete(':id')
+  async deleteQuote(
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() user: any,
+  ): Promise<{ message: string }> {
+    return this.quoteService.deleteQuote(id, user.tenantId);
   }
 }
