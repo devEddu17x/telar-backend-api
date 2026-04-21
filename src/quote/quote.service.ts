@@ -3,6 +3,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { PinoLogger } from 'nestjs-pino';
 import { InjectRepository } from '@nestjs/typeorm';
 import { QuoteEntity } from './entities/quote.entity';
 import { Repository } from 'typeorm/repository/Repository';
@@ -29,6 +30,7 @@ export class QuoteService {
     private readonly clothesService: ClothesService,
     private readonly clothesVariantsService: ClothesVariantsService,
     private readonly dataSource: DataSource,
+    private readonly logger: PinoLogger,
   ) {}
 
   async createQuote(
@@ -471,26 +473,50 @@ export class QuoteService {
     id: string,
     tenantId: string,
   ): Promise<{ message: string }> {
-    const existingQuote = await this.quoteRepository.findOne({
-      where: { id, tenantId },
-    });
-
-    if (!existingQuote) {
-      throw new NotFoundException(`Quote with ID ${id} not found.`);
-    }
-
-    if (existingQuote.status === QuoteStatus.APPROVED) {
-      throw new BadRequestException(
-        'Cannot delete an APPROVED quote as it may be associated with an active Order. Cancel the associated order first if needed.',
-      );
-    }
-
+    const queryRunner = this.dataSource.createQueryRunner();
     try {
-      await this.quoteRepository.softDelete({ id, tenantId });
+      await queryRunner.connect();
+      await queryRunner.startTransaction();
+
+      const existingQuote = await queryRunner.manager.findOne(QuoteEntity, {
+        where: { id, tenantId },
+      });
+
+      if (!existingQuote) {
+        throw new NotFoundException(`Quote with ID ${id} not found.`);
+      }
+
+      if (existingQuote.status === QuoteStatus.APPROVED) {
+        throw new BadRequestException(
+          'Cannot delete an APPROVED quote as it may be associated with an active Order. Cancel the associated order first if needed.',
+        );
+      }
+
+      const deleteResult = await queryRunner.manager.softDelete(QuoteEntity, {
+        id,
+        tenantId,
+      });
+
+      if (deleteResult.affected === 0) {
+        throw new NotFoundException(
+          `Quote with ID ${id} not found or already deleted.`,
+        );
+      }
+
+      await queryRunner.commitTransaction();
       return { message: 'Quote successfully deleted' };
     } catch (error) {
-      console.log(error);
+      await queryRunner.rollbackTransaction();
+      if (
+        error instanceof NotFoundException ||
+        error instanceof BadRequestException
+      ) {
+        throw error;
+      }
+      this.logger.error({ err: error, id, tenantId }, 'Error deleting quote');
       throw new BadRequestException('Error deleting quote');
+    } finally {
+      await queryRunner.release();
     }
   }
 }
