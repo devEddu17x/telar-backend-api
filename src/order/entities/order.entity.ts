@@ -9,6 +9,8 @@ import {
   ManyToOne,
   OneToOne,
   PrimaryGeneratedColumn,
+  DeleteDateColumn,
+  UpdateDateColumn,
 } from 'typeorm';
 import { AddressEntity } from './address.entity';
 import { OrderStatus } from '../enum/order-status.enum';
@@ -60,4 +62,10 @@ export class OrderEntity {
   @ManyToOne(() => TenantEntity, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'tenant_id' })
   tenant: TenantEntity;
+
+  @UpdateDateColumn()
+  updatedAt: Date;
+
+  @DeleteDateColumn({ select: false })
+  deletedAt: Date;
 }

@@ -347,4 +347,31 @@ export class OrderService {
       };
     });
   }
+
+  async deleteOrder(
+    id: string,
+    tenantId: string,
+  ): Promise<{ message: string }> {
+    const existingOrder = await this.orderRepository.findOne({
+      where: { id, tenantId },
+    });
+
+    if (!existingOrder) {
+      throw new NotFoundException(`Order with ID ${id} not found.`);
+    }
+
+    if (existingOrder.status !== OrderStatus.CANCELLED) {
+      throw new BadRequestException(
+        'Only CANCELLED orders can be deleted. Please cancel the order first.',
+      );
+    }
+
+    try {
+      await this.orderRepository.softDelete({ id, tenantId });
+      return { message: 'Order successfully deleted' };
+    } catch (error) {
+      console.log(error);
+      throw new BadRequestException('Error deleting order');
+    }
+  }
 }
