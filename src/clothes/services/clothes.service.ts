@@ -3,6 +3,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { PinoLogger } from 'nestjs-pino';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, Equal, In, Repository } from 'typeorm';
 import { ClothesEntity } from '../entities/clothes.entity';
@@ -14,7 +15,7 @@ import { CreatedClothes } from '../interfaces/created-clothes.interface';
 import { ClotheImageEntity } from '../entities/images.entity';
 import { UpdateClothesDTO } from '../dto/update-clothes.dto';
 import { QuoteDetailEntity } from 'src/quote/entities/quote-detail.entity';
-import { StorageService } from 'src/storage/storage.service';
+import { QuoteStatus } from 'src/quote/enums/status.enum';
 import { CreateDraftClothesDTO } from '../dto/create-draft-clothes.dto';
 import { CLOTHES_GENDER } from '../enum/gender.enum';
 import { CLOTHES_SIZES } from '../enum/size.enum';
@@ -36,7 +37,7 @@ export class ClothesService {
     @InjectRepository(QuoteDetailEntity)
     private readonly quoteDetailRepository: Repository<QuoteDetailEntity>,
     private readonly dataSource: DataSource,
-    private readonly storageService: StorageService,
+    private readonly logger: PinoLogger,
   ) {}
 
   async createClothe(
@@ -398,11 +399,32 @@ export class ClothesService {
       );
     }
 
+    const activeReferences = await this.quoteDetailRepository.count({
+      where: {
+        clothesVariant: {
+          clothesId: clothesId,
+        },
+        quote: {
+          status: In([QuoteStatus.PENDING, QuoteStatus.APPROVED]),
+        },
+      },
+      relations: ['clothesVariant', 'quote'],
+    });
+
+    if (activeReferences > 0) {
+      throw new BadRequestException(
+        'Cannot delete clothes item as it is currently referenced in active (PENDING or APPROVED) quotes and/or orders. Cancel those quotes/orders first.',
+      );
+    }
+
     try {
       await this.clothesRepository.softDelete({ id: clothesId, tenantId });
       return { message: 'Clothes item successfully deleted' };
     } catch (error) {
-      console.log(error);
+      this.logger.error(
+        { err: error, id: clothesId, tenantId },
+        'Error deleting clothes item',
+      );
       throw new BadRequestException('Error deleting clothes item');
     }
   }
