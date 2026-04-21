@@ -3,6 +3,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { PinoLogger } from 'nestjs-pino';
 import { InjectRepository } from '@nestjs/typeorm';
 import { OrderEntity } from './entities/order.entity';
 import { AddressEntity } from './entities/address.entity';
@@ -25,6 +26,7 @@ export class OrderService {
     private readonly dataSource: DataSource,
     private readonly quoteService: QuoteService,
     private readonly clothesService: ClothesService,
+    private readonly logger: PinoLogger,
   ) {}
 
   async createOrder(
@@ -367,10 +369,23 @@ export class OrderService {
     }
 
     try {
-      await this.orderRepository.softDelete({ id, tenantId });
+      const deleteResult = await this.orderRepository.softDelete({
+        id,
+        tenantId,
+      });
+
+      if (deleteResult.affected === 0) {
+        throw new NotFoundException(
+          `Order with ID ${id} not found or already deleted.`,
+        );
+      }
+
       return { message: 'Order successfully deleted' };
     } catch (error) {
-      console.log(error);
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      this.logger.error({ err: error, id, tenantId }, 'Error deleting order');
       throw new BadRequestException('Error deleting order');
     }
   }
