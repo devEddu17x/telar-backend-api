@@ -214,4 +214,12 @@ export class ClothesController {
       user.tenantId,
     );
   }
+
+  @Delete(':id')
+  async deleteClothes(
+    @Param('id', ParseUUIDPipe) clothesId: string,
+    @CurrentUser() user: any,
+  ): Promise<{ message: string }> {
+    return this.clothesService.deleteClothes(clothesId, user.tenantId);
+  }
 }

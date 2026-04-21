@@ -383,4 +383,27 @@ export class ClothesService {
       throw new BadRequestException('Error checking draft clothes');
     }
   }
+
+  async deleteClothes(
+    clothesId: string,
+    tenantId: string,
+  ): Promise<{ message: string }> {
+    const clothe = await this.clothesRepository.findOne({
+      where: { id: clothesId, tenantId },
+    });
+
+    if (!clothe) {
+      throw new NotFoundException(
+        'Clothes item not found or you do not have permission to access it',
+      );
+    }
+
+    try {
+      await this.clothesRepository.softDelete({ id: clothesId, tenantId });
+      return { message: 'Clothes item successfully deleted' };
+    } catch (error) {
+      console.log(error);
+      throw new BadRequestException('Error deleting clothes item');
+    }
+  }
 }
