@@ -215,6 +215,8 @@ export class ClothesController {
     );
   }
 
+  @Roles(ROLES.ADMIN)
+  @UseGuards(RolesGuard)
   @Delete(':id')
   async deleteClothes(
     @Param('id', ParseUUIDPipe) clothesId: string,
