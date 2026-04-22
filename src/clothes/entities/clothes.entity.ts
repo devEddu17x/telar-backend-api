@@ -4,6 +4,7 @@ import {
   Column,
   CreateDateColumn,
   UpdateDateColumn,
+  DeleteDateColumn,
   OneToMany,
   ManyToOne,
   JoinColumn,
@@ -44,6 +45,9 @@ export class ClothesEntity {
 
   @UpdateDateColumn()
   updatedAt: Date;
+
+  @DeleteDateColumn({ select: false }) // hidden from standard select
+  deletedAt: Date;
 
   @OneToMany(() => ClothesVariantEntity, (variant) => variant.clothes)
   clothes_variant: ClothesVariantEntity[];

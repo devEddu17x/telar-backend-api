@@ -6,6 +6,7 @@ import {
   ParseUUIDPipe,
   Patch,
   Post,
+  Delete,
   UseGuards,
 } from '@nestjs/common';
 import { OrderService } from './order.service';
@@ -63,5 +64,15 @@ export class OrderController {
     @CurrentUser() user: any,
   ) {
     return await this.orderService.cancelOrder(id, dto.reason, user.tenantId);
+  }
+
+  @Roles(ROLES.OWNER, ROLES.ADMIN)
+  @UseGuards(RolesGuard)
+  @Delete(':id')
+  async deleteOrder(
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() user: any,
+  ) {
+    return await this.orderService.deleteOrder(id, user.tenantId);
   }
 }

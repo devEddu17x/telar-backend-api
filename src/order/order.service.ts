@@ -3,6 +3,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { PinoLogger } from 'nestjs-pino';
 import { InjectRepository } from '@nestjs/typeorm';
 import { OrderEntity } from './entities/order.entity';
 import { AddressEntity } from './entities/address.entity';
@@ -25,6 +26,7 @@ export class OrderService {
     private readonly dataSource: DataSource,
     private readonly quoteService: QuoteService,
     private readonly clothesService: ClothesService,
+    private readonly logger: PinoLogger,
   ) {}
 
   async createOrder(
@@ -346,5 +348,45 @@ export class OrderService {
         totalUnitsToProduced: parseInt(rawData.totalUnitsToProduced) || 0,
       };
     });
+  }
+
+  async deleteOrder(
+    id: string,
+    tenantId: string,
+  ): Promise<{ message: string }> {
+    try {
+      const existingOrder = await this.orderRepository.findOne({
+        where: { id, tenantId },
+      });
+
+      if (!existingOrder) {
+        throw new NotFoundException(`Order with ID ${id} not found.`);
+      }
+
+      if (existingOrder.status !== OrderStatus.CANCELLED) {
+        throw new BadRequestException(
+          'Only CANCELLED orders can be deleted. Please cancel the order first.',
+        );
+      }
+
+      const deleteResult = await this.orderRepository.softDelete({
+        id,
+        tenantId,
+      });
+
+      if (deleteResult.affected === 0) {
+        throw new NotFoundException(
+          `Order with ID ${id} not found or already deleted.`,
+        );
+      }
+
+      return { message: 'Order successfully deleted' };
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      this.logger.error({ err: error, id, tenantId }, 'Error deleting order');
+      throw new BadRequestException('Error deleting order');
+    }
   }
 }

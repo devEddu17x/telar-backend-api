@@ -9,6 +9,7 @@ import {
   OneToMany,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
+  DeleteDateColumn,
 } from 'typeorm';
 import { QuoteDetailEntity } from './quote-detail.entity';
 import { QuoteStatus } from '../enums/status.enum';
@@ -48,4 +49,7 @@ export class QuoteEntity {
 
   @UpdateDateColumn()
   updatedAt: Date;
+
+  @DeleteDateColumn({ select: false })
+  deletedAt: Date;
 }
