@@ -9,6 +9,15 @@
         "include": "auth/templates/**/*",
         "outDir": "dist"
       }
+    ],
+    "plugins": [
+      {
+        "name": "@nestjs/swagger",
+        "options": {
+          "classValidatorShim": true,
+          "skipAutoHttpCode": true
+        }
+      }
     ]
   }
 }
