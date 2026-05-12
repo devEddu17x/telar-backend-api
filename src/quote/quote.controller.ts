@@ -13,6 +13,14 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { QuoteService } from './quote.service';
+import {
+  ApiDocCreateQuote,
+  ApiDocGetQuotes,
+  ApiDocGetQuoteById,
+  ApiDocUpdateQuote,
+  ApiDocCancelQuote,
+  ApiDocDeleteQuote,
+} from './docs/quote.doc';
 import { CreateQuoteDTO } from './dtos/create-quote.dto';
 import { QuoteStatus } from './enums/status.enum';
 import { RolesGuard } from 'src/auth/guards/roles.guard';
@@ -33,6 +41,7 @@ export class QuoteController {
   constructor(private readonly quoteService: QuoteService) {}
 
   @Post()
+  @ApiDocCreateQuote()
   async createQuote(
     @Body() dto: CreateQuoteDTO,
     @CurrentUser() user: any,
@@ -41,6 +50,7 @@ export class QuoteController {
   }
 
   @Get()
+  @ApiDocGetQuotes()
   async getQuotes(
     @CurrentUser() user: any,
     @Query('status') status?: QuoteStatus,
@@ -57,6 +67,7 @@ export class QuoteController {
   }
 
   @Get(':id')
+  @ApiDocGetQuoteById()
   async getQuoteById(
     @Param('id', ParseUUIDPipe) id: string,
     @CurrentUser() user: any,
@@ -65,6 +76,7 @@ export class QuoteController {
   }
 
   @Put(':id')
+  @ApiDocUpdateQuote()
   async updateQuote(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpdateQuoteDTO,
@@ -74,6 +86,7 @@ export class QuoteController {
   }
 
   @Patch(':id/cancel')
+  @ApiDocCancelQuote()
   async cancelQuote(
     @Param('id', ParseUUIDPipe) id: string,
     @CurrentUser() user: any,
@@ -82,6 +95,7 @@ export class QuoteController {
   }
 
   @Delete(':id')
+  @ApiDocDeleteQuote()
   async deleteQuote(
     @Param('id', ParseUUIDPipe) id: string,
     @CurrentUser() user: any,
