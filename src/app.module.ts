@@ -9,7 +9,6 @@ import { AdminModule } from './admin/admin.module';
 import { StorageModule } from './storage/storage.module';
 import { QuoteModule } from './quote/quote.module';
 import { OrderModule } from './order/order.module';
-import { CartModule } from './cart/cart.module';
 import { AuthModule } from './auth/auth.module';
 import { TenantModule } from './tenant/tenant.module';
 @Module({
@@ -23,7 +22,6 @@ import { TenantModule } from './tenant/tenant.module';
     StorageModule,
     QuoteModule,
     OrderModule,
-    CartModule,
     TenantModule,
   ],
 
