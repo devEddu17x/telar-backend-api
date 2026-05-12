@@ -11,6 +11,20 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ClothesService } from './services/clothes.service';
+import {
+  ApiDocCreateClothes,
+  ApiDocCreateDraftClothes,
+  ApiDocGetAllClothes,
+  ApiDocSearchAndFilterClothes,
+  ApiDocGetClothesById,
+  ApiDocUpdateClothes,
+  ApiDocAddVariant,
+  ApiDocUpdateVariant,
+  ApiDocDeleteVariant,
+  ApiDocAddImages,
+  ApiDocDeleteImage,
+  ApiDocDeleteClothes,
+} from './docs/clothes.doc';
 import { CreateClothesDTO } from './dto/create-clothes.dto';
 import { RolesGuard } from 'src/auth/guards/roles.guard';
 import { Roles } from 'src/auth/decorators/roles.decorator';
@@ -42,6 +56,7 @@ export class ClothesController {
 
   @UseGuards(RolesGuard)
   @Post()
+  @ApiDocCreateClothes()
   async createClothes(
     @Body() clothesDto: CreateClothesDTO,
     @CurrentUser() user: any,
@@ -71,6 +86,7 @@ export class ClothesController {
 
   @UseGuards(RolesGuard)
   @Post('quick-create')
+  @ApiDocCreateDraftClothes()
   async createDraftClothes(
     @Body() draftClothesDto: CreateDraftClothesDTO,
     @CurrentUser() user: any,
@@ -103,6 +119,7 @@ export class ClothesController {
   }
 
   @Get()
+  @ApiDocGetAllClothes()
   async getAllClothes(@CurrentUser() user: any): Promise<any> {
     // this method should return different data based on the user's role:
     // - if the user is an admin, return all clothes with all details
@@ -111,6 +128,7 @@ export class ClothesController {
   }
 
   @Get('search')
+  @ApiDocSearchAndFilterClothes()
   async searchAndFilterClothes(
     @CurrentUser() user: any,
     @Query('name') name?: string,
@@ -128,6 +146,7 @@ export class ClothesController {
   }
 
   @Get(':id')
+  @ApiDocGetClothesById()
   async getClothesById(
     @Param('id', ParseUUIDPipe) clothesId: string,
     @CurrentUser() user: any,
@@ -136,6 +155,7 @@ export class ClothesController {
   }
 
   @Patch(':id')
+  @ApiDocUpdateClothes()
   async updateClothes(
     @Param('id', ParseUUIDPipe) clothesId: string,
     @Body() updateClothesDto: UpdateClothesDTO,
@@ -149,6 +169,7 @@ export class ClothesController {
   }
 
   @Post(':id/variants')
+  @ApiDocAddVariant()
   async addVariant(
     @Param('id', ParseUUIDPipe) clothesId: string,
     @Body() variantDto: Variant,
@@ -162,6 +183,7 @@ export class ClothesController {
   }
 
   @Patch(':id/variants/:variantId')
+  @ApiDocUpdateVariant()
   async updateVariant(
     @Param('id', ParseUUIDPipe) clothesId: string,
     @Param('variantId', ParseUUIDPipe) variantId: string,
@@ -177,6 +199,7 @@ export class ClothesController {
   }
 
   @Delete(':id/variants/:variantId')
+  @ApiDocDeleteVariant()
   async deleteVariant(
     @Param('id', ParseUUIDPipe) clothesId: string,
     @Param('variantId', ParseUUIDPipe) variantId: string,
@@ -190,6 +213,7 @@ export class ClothesController {
   }
 
   @Post(':id/images')
+  @ApiDocAddImages()
   async addImages(
     @Param('id', ParseUUIDPipe) clothesId: string,
     @Body() addImagesDto: AddImagesToClothesDTO,
@@ -203,6 +227,7 @@ export class ClothesController {
   }
 
   @Delete(':id/images')
+  @ApiDocDeleteImage()
   async deleteImage(
     @Param('id', ParseUUIDPipe) clothesId: string,
     @Body() deleteImageDto: DeleteImageDTO,
@@ -218,6 +243,7 @@ export class ClothesController {
   @Roles(ROLES.ADMIN)
   @UseGuards(RolesGuard)
   @Delete(':id')
+  @ApiDocDeleteClothes()
   async deleteClothes(
     @Param('id', ParseUUIDPipe) clothesId: string,
     @CurrentUser() user: any,

@@ -10,6 +10,14 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { OrderService } from './order.service';
+import {
+  ApiDocCreateOrder,
+  ApiDocGetOrders,
+  ApiDocGetOrderById,
+  ApiDocUpdateOrderStatus,
+  ApiDocCancelOrder,
+  ApiDocDeleteOrder,
+} from './docs/order.doc';
 import { CreateOrderDTO } from './dtos/create-order.dto';
 import { CurrentUser } from 'src/auth/decorators/current-user.decorator';
 import { UpdateOrderDTO } from './dtos/update-order.dto';
@@ -27,16 +35,19 @@ export class OrderController {
   constructor(private readonly orderService: OrderService) {}
 
   @Post()
+  @ApiDocCreateOrder()
   async createOrder(@Body() dto: CreateOrderDTO, @CurrentUser() user: any) {
     return await this.orderService.createOrder(dto, user.tenantId);
   }
 
   @Get()
+  @ApiDocGetOrders()
   async getOrders(@CurrentUser() user: any) {
     return await this.orderService.getOrders(user.tenantId);
   }
 
   @Get(':id')
+  @ApiDocGetOrderById()
   async getOrderById(
     @Param('id', ParseUUIDPipe) id: string,
     @CurrentUser() user: any,
@@ -45,6 +56,7 @@ export class OrderController {
   }
 
   @Patch(':id')
+  @ApiDocUpdateOrderStatus()
   async updateOrderStatus(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpdateOrderDTO,
@@ -58,6 +70,7 @@ export class OrderController {
   }
 
   @Patch(':id/cancel')
+  @ApiDocCancelOrder()
   async cancelOrder(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: CancelOrderDTO,
@@ -69,6 +82,7 @@ export class OrderController {
   @Roles(ROLES.OWNER, ROLES.ADMIN)
   @UseGuards(RolesGuard)
   @Delete(':id')
+  @ApiDocDeleteOrder()
   async deleteOrder(
     @Param('id', ParseUUIDPipe) id: string,
     @CurrentUser() user: any,

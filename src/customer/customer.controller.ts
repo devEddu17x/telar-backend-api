@@ -10,6 +10,12 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { CustomerService } from './services/customer-internal.service';
+import {
+  ApiDocCreateCustomer,
+  ApiDocGetAllCustomers,
+  ApiDocSearchCustomers,
+  ApiDocUpdateCustomer,
+} from './docs/customer.doc';
 import { CreateCustomerDTO } from './dtos/create-customer.dto';
 import { ROLES } from 'src/auth/constants/roles';
 import { RolesGuard } from 'src/auth/guards/roles.guard';
@@ -26,6 +32,7 @@ export class CustomerController {
   constructor(private readonly customerService: CustomerService) {}
 
   @Post()
+  @ApiDocCreateCustomer()
   async createCustomer(
     @Body() customerDTO: CreateCustomerDTO,
     @CurrentUser() user: any,
@@ -37,11 +44,13 @@ export class CustomerController {
   }
 
   @Get()
+  @ApiDocGetAllCustomers()
   async getAllCustomers(@CurrentUser() user: any): Promise<CustomerEntity[]> {
     return await this.customerService.getAllCustomers(user.tenantId);
   }
 
   @Get('search')
+  @ApiDocSearchCustomers()
   async searchCustomers(
     @CurrentUser() user: any,
     @Query('names') names?: string,
@@ -57,6 +66,7 @@ export class CustomerController {
   }
 
   @Patch(':id')
+  @ApiDocUpdateCustomer()
   async updateCustomer(
     @Body() customerDTO: UpdateCustomerDTO,
     @Param('id', ParseUUIDPipe) id: string,
