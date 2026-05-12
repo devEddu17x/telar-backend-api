@@ -33,6 +33,7 @@ export class CognitoService {
   private cognitoClient: CognitoIdentityProviderClient;
   private userPoolId: string;
   private clientId: string;
+  private internalAuthToken: string;
   constructor(
     private readonly logger: PinoLogger,
     private readonly configService: ConfigService,
@@ -43,6 +44,9 @@ export class CognitoService {
     });
     this.userPoolId = this.configService.get<string>('cognito.userPoolId');
     this.clientId = this.configService.get<string>('cognito.clientId');
+    this.internalAuthToken = this.configService.get<string>(
+      'cognito.internalAuthToken',
+    );
   }
 
   async signUpUser(params: CognitoOwnerParams) {
@@ -56,6 +60,9 @@ export class CognitoService {
           { Name: 'name', Value: params.name },
           { Name: 'family_name', Value: params.lastName },
         ],
+        ClientMetadata: {
+          AWS_COGNITO_INTERNAL_AUTH_TOKEN: this.internalAuthToken,
+        },
       });
 
       const user = await this.cognitoClient.send(signUpCommand);

@@ -5,12 +5,14 @@ export default registerAs('cognito', () => {
     AWS_COGNITO_USER_POOL_ID,
     AWS_COGNITO_REGION,
     AWS_COGNITO_CLIENT_ID,
+    AWS_COGNITO_INTERNAL_AUTH_TOKEN,
   } = process.env;
 
   const missingVars = [
     ['AWS_COGNITO_USER_POOL_ID', AWS_COGNITO_USER_POOL_ID],
     ['AWS_COGNITO_REGION', AWS_COGNITO_REGION],
     ['AWS_COGNITO_CLIENT_ID', AWS_COGNITO_CLIENT_ID],
+    ['AWS_COGNITO_INTERNAL_AUTH_TOKEN', AWS_COGNITO_INTERNAL_AUTH_TOKEN],
   ]
     .filter(
       ([, value]) => typeof value !== 'string' || value.trim().length === 0,
@@ -27,5 +29,6 @@ export default registerAs('cognito', () => {
     userPoolId: AWS_COGNITO_USER_POOL_ID,
     region: AWS_COGNITO_REGION,
     clientId: AWS_COGNITO_CLIENT_ID,
+    internalAuthToken: AWS_COGNITO_INTERNAL_AUTH_TOKEN,
   };
 });
