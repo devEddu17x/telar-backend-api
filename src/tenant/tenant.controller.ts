@@ -8,6 +8,7 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { TenantService } from './tenant.service';
+import { ApiDocSetupTenant, ApiDocGetTenant } from './docs/tenant.doc';
 import { CreateTenantDto } from './dtos/create-tenant.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
@@ -18,6 +19,7 @@ export class TenantController {
   constructor(private readonly tenantService: TenantService) {}
 
   @Post('setup')
+  @ApiDocSetupTenant()
   async setupTenant(
     @Body() createTenantDto: CreateTenantDto,
     @CurrentUser() user: any,
@@ -30,6 +32,7 @@ export class TenantController {
   }
 
   @Get(':id')
+  @ApiDocGetTenant()
   async getTenant(@Param('id') id: string, @CurrentUser() user: any) {
     if (user.tenantId !== id) {
       throw new ForbiddenException(
