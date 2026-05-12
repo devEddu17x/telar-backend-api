@@ -1,6 +1,4 @@
 import { registerAs } from '@nestjs/config';
-import { ShoppingCartItemEntity } from 'src/cart/entities/shopping-cart-item.entity';
-import { ShoppingCartEntity } from 'src/cart/entities/shopping-cart.entity';
 import { ClothesVariantEntity } from 'src/clothes/entities/clothes-variant.entity';
 import { ClothesEntity } from 'src/clothes/entities/clothes.entity';
 import { GenderEntity } from 'src/clothes/entities/gender.entity';
@@ -58,8 +56,6 @@ export default registerAs('typeorm', () => {
       QuoteDetailEntity,
       OrderEntity,
       AddressEntity,
-      ShoppingCartEntity,
-      ShoppingCartItemEntity,
       TenantEntity,
     ],
     synchronize: process.env.NODE_ENV !== 'production',
