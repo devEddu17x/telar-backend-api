@@ -5,7 +5,7 @@ import {
   IsString,
   MaxLength,
 } from 'class-validator';
-import { CREATABLE_ROLES } from 'src/auth/constants/roles';
+import { CREATABLE_ROLES } from 'src/common/enum/roles';
 
 export class CreateEmployeeDTO {
   @IsString()
