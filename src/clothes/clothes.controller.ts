@@ -29,7 +29,7 @@ import { CreateClothesDTO } from './dto/create-clothes.dto';
 import { RolesGuard } from 'src/auth/guards/roles.guard';
 import { Roles } from 'src/auth/decorators/roles.decorator';
 import { CurrentUser } from 'src/auth/decorators/current-user.decorator';
-import { ROLES } from 'src/auth/constants/roles';
+import { ROLES } from 'src/common/enum/roles';
 import { CreatedClothes } from './interfaces/created-clothes.interface';
 import { StorageService } from 'src/storage/storage.service';
 import { PresignedPut } from 'src/storage/interfaces/presigned-url.interface';
