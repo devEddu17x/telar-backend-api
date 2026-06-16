@@ -20,8 +20,8 @@ async function bootstrap() {
   );
 
   const config = new DocumentBuilder()
-    .setTitle('Textile SaaS API')
-    .setDescription('API documentation for the Textile SaaS application')
+    .setTitle('Telar API')
+    .setDescription('API documentation for the Telar application')
     .setVersion('1.0.0')
     .build();
 
