@@ -19,7 +19,6 @@ import { LoggerModule } from 'nestjs-pino';
       isGlobal: true,
       load: [
         config.typeormConfig,
-        config.cookieConfig,
         config.apiConfig,
         config.pinoLoggerConfig,
         config.s3Config,
