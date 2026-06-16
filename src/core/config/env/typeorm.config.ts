@@ -1,16 +1,16 @@
 import { registerAs } from '@nestjs/config';
-import { ClothesVariantEntity } from 'src/clothes/entities/clothes-variant.entity';
-import { ClothesEntity } from 'src/clothes/entities/clothes.entity';
-import { GenderEntity } from 'src/clothes/entities/gender.entity';
-import { ClotheImageEntity } from 'src/clothes/entities/images.entity';
-import { SizeEntity } from 'src/clothes/entities/size.entity';
-import { CustomerEntity } from 'src/customer/entities/customer.entity';
-import { EmployeeEntity } from 'src/employee/entities/employee.entity';
-import { AddressEntity } from 'src/order/entities/address.entity';
-import { OrderEntity } from 'src/order/entities/order.entity';
-import { QuoteDetailEntity } from 'src/quote/entities/quote-detail.entity';
-import { QuoteEntity } from 'src/quote/entities/quote.entity';
-import { TenantEntity } from 'src/tenant/entities/tenant.entity';
+import { ClothesVariantEntity } from 'src/modules/clothes/entities/clothes-variant.entity';
+import { ClothesEntity } from 'src/modules/clothes/entities/clothes.entity';
+import { GenderEntity } from 'src/modules/clothes/entities/gender.entity';
+import { ClotheImageEntity } from 'src/modules/clothes/entities/images.entity';
+import { SizeEntity } from 'src/modules/clothes/entities/size.entity';
+import { CustomerEntity } from 'src/modules/customer/entities/customer.entity';
+import { EmployeeEntity } from 'src/modules/employee/entities/employee.entity';
+import { AddressEntity } from 'src/modules/order/entities/address.entity';
+import { OrderEntity } from 'src/modules/order/entities/order.entity';
+import { QuoteDetailEntity } from 'src/modules/quote/entities/quote-detail.entity';
+import { QuoteEntity } from 'src/modules/quote/entities/quote.entity';
+import { TenantEntity } from 'src/modules/tenant/entities/tenant.entity';
 
 export default registerAs('typeorm', () => {
   const { DB_HOST, DB_PORT, DB_USERNAME, DB_PASSWORD, DB_NAME, DB_SSL } =
