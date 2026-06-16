@@ -22,7 +22,7 @@ import { CreateOrderDTO } from './dtos/create-order.dto';
 import { CurrentUser } from 'src/auth/decorators/current-user.decorator';
 import { UpdateOrderDTO } from './dtos/update-order.dto';
 import { CancelOrderDTO } from './dtos/cancel-order.dto';
-import { ROLES } from 'src/auth/constants/roles';
+import { ROLES } from 'src/common/enum/roles';
 import { Roles } from 'src/auth/decorators/roles.decorator';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { RequireTenantGuard } from 'src/auth/guards/require-tenant.guard';
