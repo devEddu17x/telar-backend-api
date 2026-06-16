@@ -1,5 +1,5 @@
 import { IsEmail, IsEnum, IsNotEmpty } from 'class-validator';
-import { ROLES } from 'src/auth/constants/roles';
+import { ROLES } from 'src/common/enum/roles';
 
 export class EmployeeRoleUpdateDTO {
   @IsNotEmpty()

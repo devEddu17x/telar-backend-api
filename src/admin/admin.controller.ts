@@ -9,7 +9,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { AdminService } from './admin.service';
-import { ROLES } from 'src/auth/constants/roles';
+import { ROLES } from 'src/common/enum/roles';
 import { CreateEmployeeDTO } from 'src/employee/dtos/create-employee.dto';
 import { EmployeeRoleUpdateDTO } from './dtos/promote-employee.dto';
 import { RolesGuard } from 'src/auth/guards/roles.guard';
