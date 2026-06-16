@@ -17,7 +17,7 @@ import {
   ApiDocUpdateCustomer,
 } from './docs/customer.doc';
 import { CreateCustomerDTO } from './dtos/create-customer.dto';
-import { ROLES } from 'src/auth/constants/roles';
+import { ROLES } from 'src/common/enum/roles';
 import { RolesGuard } from 'src/auth/guards/roles.guard';
 import { Roles } from 'src/auth/decorators/roles.decorator';
 import { CurrentUser } from 'src/auth/decorators/current-user.decorator';
