@@ -11,7 +11,7 @@ import {
   CognitoOwnerParams,
   CognitoEmployeeParams,
 } from '../interfaces/cognito-user-interface';
-import { CREATABLE_ROLES, ROLES } from '../constants/roles';
+import { CREATABLE_ROLES, ROLES } from '../../common/enum/roles';
 import { EmployeeService } from 'src/employee/employee.service';
 import { maskEmail } from 'src/utils/mask-email.util';
 
