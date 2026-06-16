@@ -26,7 +26,7 @@ import { QuoteStatus } from './enums/status.enum';
 import { RolesGuard } from 'src/auth/guards/roles.guard';
 import { Roles } from 'src/auth/decorators/roles.decorator';
 import { CurrentUser } from 'src/auth/decorators/current-user.decorator';
-import { ROLES } from 'src/auth/constants/roles';
+import { ROLES } from 'src/common/enum/roles';
 import { QuoteSummary } from './interfaces/clothes-data.interface';
 import { CreatedClothes } from './interfaces/created-clothes.interface';
 import { UpdateQuoteDTO } from './dtos/update-quote.dto';
