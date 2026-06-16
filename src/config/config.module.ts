@@ -22,7 +22,6 @@ import { LoggerModule } from 'nestjs-pino';
         config.apiConfig,
         config.pinoLoggerConfig,
         config.s3Config,
-        config.emailConfig,
         config.cognitoConfig,
       ],
     }),
