@@ -1,0 +1,431 @@
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+import { PinoLogger } from 'nestjs-pino';
+import { InjectRepository } from '@nestjs/typeorm';
+import { DataSource, Equal, In, Repository } from 'typeorm';
+import { ClothesEntity } from '../entities/clothes.entity';
+import { CreateClothesDTO } from '../dto/create-clothes.dto';
+import { ClothesVariantEntity } from '../entities/clothes-variant.entity';
+import { SizeEntity } from '../entities/size.entity';
+import { GenderEntity } from '../entities/gender.entity';
+import { CreatedClothes } from '../interfaces/created-clothes.interface';
+import { ClotheImageEntity } from '../entities/images.entity';
+import { UpdateClothesDTO } from '../dto/update-clothes.dto';
+import { QuoteDetailEntity } from 'src/modules/quote/entities/quote-detail.entity';
+import { QuoteStatus } from 'src/modules/quote/enums/status.enum';
+import { CreateDraftClothesDTO } from '../dto/create-draft-clothes.dto';
+import { CLOTHES_GENDER } from '../enum/gender.enum';
+import { CLOTHES_SIZES } from '../enum/size.enum';
+import { ClothesFilterOptions } from '../interfaces/filter-options.interface';
+
+@Injectable()
+export class ClothesService {
+  constructor(
+    @InjectRepository(ClothesEntity)
+    private readonly clothesRepository: Repository<ClothesEntity>,
+    @InjectRepository(ClothesVariantEntity)
+    private readonly variantsRepository: Repository<ClothesVariantEntity>,
+    @InjectRepository(SizeEntity)
+    private readonly sizeRepository: Repository<SizeEntity>,
+    @InjectRepository(GenderEntity)
+    private readonly genderRepository: Repository<GenderEntity>,
+    @InjectRepository(ClotheImageEntity)
+    private readonly imageRepository: Repository<ClotheImageEntity>,
+    @InjectRepository(QuoteDetailEntity)
+    private readonly quoteDetailRepository: Repository<QuoteDetailEntity>,
+    private readonly dataSource: DataSource,
+    private readonly logger: PinoLogger,
+  ) {}
+
+  async createClothe(
+    clothes: CreateClothesDTO,
+    tenantId: string,
+  ): Promise<CreatedClothes> {
+    const { name, description, price, variants } = clothes;
+
+    const variantKeys = new Set<string>();
+    for (const v of variants) {
+      const key = `${v.size}-${v.gender}`;
+      if (variantKeys.has(key)) {
+        throw new BadRequestException(
+          `Duplicate combination of size and gender: ${v.size} - ${v.gender}`,
+        );
+      }
+      variantKeys.add(key);
+    }
+
+    const uniqueSizes = [...new Set(variants.map((v) => v.size))];
+    const uniqueGenders = [...new Set(variants.map((v) => v.gender))];
+
+    const [sizes, genders] = await Promise.all([
+      this.sizeRepository.find({ where: { size: In(uniqueSizes) } }),
+      this.genderRepository.find({ where: { gender: In(uniqueGenders) } }),
+    ]);
+
+    const sizeIdByEnum = new Map(sizes.map((s) => [s.size, s.id]));
+    const genderIdByEnum = new Map(genders.map((g) => [g.gender, g.id]));
+
+    for (const v of variants) {
+      if (!sizeIdByEnum.get(v.size))
+        throw new BadRequestException(`Unknown size: ${v.size}`);
+      if (!genderIdByEnum.get(v.gender))
+        throw new BadRequestException(`Unknown gender: ${v.gender}`);
+    }
+
+    const queryRunner = this.dataSource.createQueryRunner();
+    try {
+      await queryRunner.connect();
+      await queryRunner.startTransaction();
+      const newClothe = await queryRunner.manager.save(
+        ClothesEntity,
+        this.clothesRepository.create({ name, description, price, tenantId }),
+      );
+      const newVariants = variants.map((v) =>
+        this.variantsRepository.create({
+          clothesId: newClothe.id,
+          sizeId: sizeIdByEnum.get(v.size)!,
+          genderId: genderIdByEnum.get(v.gender)!,
+          additional: v.additional,
+          tenantId,
+        }),
+      );
+      const savedVariants: ClothesVariantEntity[] =
+        await queryRunner.manager.save(ClothesVariantEntity, newVariants);
+      await queryRunner.commitTransaction();
+      return { ...newClothe, variants: savedVariants };
+    } catch (error) {
+      console.log(error);
+      await queryRunner.rollbackTransaction();
+      throw new BadRequestException('Error creating the clothes item');
+    } finally {
+      await queryRunner.release();
+    }
+  }
+
+  async createDraftClothe(
+    clothes: CreateDraftClothesDTO,
+    tenantId: string,
+  ): Promise<CreatedClothes> {
+    const { name, price } = clothes;
+    const newClothe = this.clothesRepository.create({
+      name,
+      price,
+      isDraft: true,
+      isInEcommerce: false,
+      tenantId,
+    });
+
+    const [gender, size] = await Promise.all([
+      this.genderRepository.findOne({
+        where: {
+          gender: Equal(CLOTHES_GENDER.UNISEX),
+        },
+      }),
+      this.sizeRepository.findOne({
+        where: {
+          size: Equal(CLOTHES_SIZES.M),
+        },
+      }),
+    ]);
+
+    try {
+      const savedClothe = await this.clothesRepository.save(newClothe);
+      const newVariant = this.variantsRepository.create({
+        clothesId: savedClothe.id,
+        additional: 0,
+        genderId: gender.id,
+        sizeId: size.id,
+        tenantId,
+      });
+      const savedVariant = await this.variantsRepository.save(newVariant);
+      return { ...savedClothe, variants: [savedVariant] };
+    } catch (error) {
+      console.log(error);
+      throw new BadRequestException('Error creating draft clothes item');
+    }
+  }
+
+  async getAllClothes(
+    tenantId: string,
+    filterOptions?: ClothesFilterOptions,
+  ): Promise<any> {
+    try {
+      const queryBuilder = this.clothesRepository
+        .createQueryBuilder('clothes')
+        .where('clothes.tenantId = :tenantId', { tenantId })
+        .leftJoinAndSelect('clothes.clothe_image', 'image')
+        .select([
+          'clothes.id',
+          'clothes.name',
+          'clothes.description',
+          'clothes.price',
+          'clothes.isDraft',
+          'clothes.isInEcommerce',
+          'image.url',
+        ]);
+
+      if (filterOptions?.isInEcommerce !== undefined) {
+        queryBuilder.andWhere('clothes.isInEcommerce = :isInEcommerce', {
+          isInEcommerce: filterOptions.isInEcommerce,
+        });
+      }
+
+      if (filterOptions?.isDraft !== undefined) {
+        queryBuilder.andWhere('clothes.isDraft = :isDraft', {
+          isDraft: filterOptions.isDraft,
+        });
+      }
+      const clothes = await queryBuilder.getMany();
+      return clothes;
+    } catch (error) {
+      console.log(error);
+      throw new BadRequestException('Error fetching clothes items');
+    }
+  }
+
+  async getClothesById(
+    clothesId: string,
+    tenantId: string,
+    filterOptions?: ClothesFilterOptions,
+  ): Promise<any> {
+    let clothe = null;
+    try {
+      const queryBuilder = this.clothesRepository
+        .createQueryBuilder('clothes')
+        .where('clothes.id = :clothesId', { clothesId })
+        .andWhere('clothes.tenantId = :tenantId', { tenantId })
+        .leftJoinAndSelect('clothes.clothes_variant', 'variant')
+        .leftJoinAndSelect('variant.size', 'size')
+        .leftJoinAndSelect('variant.gender', 'gender')
+        .leftJoinAndSelect('clothes.clothe_image', 'image')
+        .select([
+          'clothes.id',
+          'clothes.name',
+          'clothes.description',
+          'clothes.price',
+          'clothes.createdAt',
+          'clothes.updatedAt',
+          'clothes.isDraft',
+          'clothes.isInEcommerce',
+
+          'variant.additional',
+          'variant.id',
+
+          'size.size',
+
+          'gender.gender',
+
+          'image.url',
+        ]);
+
+      if (filterOptions?.isInEcommerce !== undefined) {
+        queryBuilder.andWhere('clothes.isInEcommerce = :isInEcommerce', {
+          isInEcommerce: filterOptions.isInEcommerce,
+        });
+      }
+
+      if (filterOptions?.isDraft !== undefined) {
+        queryBuilder.andWhere('clothes.isDraft = :isDraft', {
+          isDraft: filterOptions.isDraft,
+        });
+      }
+
+      clothe = await queryBuilder.getOne();
+    } catch (error) {
+      console.log(error);
+      throw new BadRequestException('Error fetching the clothes item');
+    }
+    if (!clothe) {
+      throw new NotFoundException('Clothes item not found');
+    }
+    return clothe;
+  }
+
+  async getClothesByIdsArray(clothesIds: string[]): Promise<ClothesEntity[]> {
+    let clothes: ClothesEntity[];
+    try {
+      clothes = await this.clothesRepository.find({
+        where: { id: In(clothesIds) },
+      });
+    } catch (error) {
+      throw new BadRequestException('Error retrieving clothes items');
+    }
+    return clothes;
+  }
+
+  async updateClothes(
+    clothesId: string,
+    updateData: UpdateClothesDTO,
+    tenantId: string,
+  ): Promise<ClothesEntity> {
+    const clothe = await this.clothesRepository.findOne({
+      where: { id: clothesId, tenantId },
+    });
+
+    if (!clothe) {
+      throw new NotFoundException(
+        'Clothes item not found or you do not have permission access it',
+      );
+    }
+
+    if (Object.keys(updateData).length === 0) {
+      throw new BadRequestException('No fields to update');
+    }
+
+    try {
+      await this.clothesRepository.update(
+        { id: clothesId, tenantId },
+        updateData,
+      );
+
+      return await this.clothesRepository.findOne({
+        where: { id: clothesId, tenantId },
+      });
+    } catch (error) {
+      console.log(error);
+      throw new BadRequestException('Error updating clothes item');
+    }
+  }
+
+  async searchAndFilterClothes(
+    tenantId: string,
+    name?: string,
+    description?: string,
+    size?: string,
+    gender?: string,
+    filterOptions?: ClothesFilterOptions,
+  ): Promise<any[]> {
+    try {
+      let query = this.clothesRepository
+        .createQueryBuilder('clothes')
+        .where('clothes.tenantId = :tenantId', { tenantId })
+        .leftJoinAndSelect('clothes.clothes_variant', 'variant')
+        .leftJoinAndSelect('variant.size', 'size')
+        .leftJoinAndSelect('variant.gender', 'gender')
+        .leftJoinAndSelect('clothes.clothe_image', 'image')
+        .select([
+          'clothes.id',
+          'clothes.name',
+          'clothes.description',
+          'clothes.price',
+          'clothes.isInEcommerce',
+          'clothes.isDraft',
+          'variant.id',
+          'variant.additional',
+          'size.size',
+          'gender.gender',
+          'image.url',
+        ]);
+
+      if (name && name.trim() !== '') {
+        query = query.andWhere('clothes.name ILIKE :name', {
+          name: `%${name.trim()}%`,
+        });
+      }
+
+      if (description && description.trim() !== '') {
+        query = query.andWhere('clothes.description ILIKE :description', {
+          description: `%${description.trim()}%`,
+        });
+      }
+
+      if (size && size.trim() !== '') {
+        query = query.andWhere('CAST(size.size AS TEXT) ILIKE :size', {
+          size: size.trim(),
+        });
+      }
+
+      if (gender && gender.trim() !== '') {
+        query = query.andWhere('CAST(gender.gender AS TEXT) ILIKE :gender', {
+          gender: gender.trim(),
+        });
+      }
+
+      if (filterOptions?.isInEcommerce !== undefined) {
+        query = query.andWhere('clothes.isInEcommerce = :isInEcommerce', {
+          isInEcommerce: filterOptions.isInEcommerce,
+        });
+      }
+
+      if (filterOptions?.isDraft !== undefined) {
+        query = query.andWhere('clothes.isDraft = :isDraft', {
+          isDraft: filterOptions.isDraft,
+        });
+      }
+
+      const clothes = await query.getMany();
+
+      return clothes;
+    } catch (error) {
+      console.log(error);
+      throw new BadRequestException('Error searching and filtering clothes');
+    }
+  }
+
+  async checkIfClothesAreDraft(clothesIds: string[]): Promise<{
+    hasDrafts: boolean;
+    draftClothes: Array<{ id: string; name: string }>;
+  }> {
+    try {
+      const clothes = await this.clothesRepository.find({
+        where: { id: In(clothesIds), isDraft: true },
+        select: ['id', 'name'],
+      });
+
+      return {
+        hasDrafts: clothes.length > 0,
+        draftClothes: clothes.map((c) => ({ id: c.id, name: c.name })),
+      };
+    } catch (error) {
+      console.log(error);
+      throw new BadRequestException('Error checking draft clothes');
+    }
+  }
+
+  async deleteClothes(
+    clothesId: string,
+    tenantId: string,
+  ): Promise<{ message: string }> {
+    const clothe = await this.clothesRepository.findOne({
+      where: { id: clothesId, tenantId },
+    });
+
+    if (!clothe) {
+      throw new NotFoundException(
+        'Clothes item not found or you do not have permission to access it',
+      );
+    }
+
+    const activeReferences = await this.quoteDetailRepository.count({
+      where: {
+        clothesVariant: {
+          clothesId: clothesId,
+        },
+        quote: {
+          status: In([QuoteStatus.PENDING, QuoteStatus.APPROVED]),
+        },
+      },
+      relations: ['clothesVariant', 'quote'],
+    });
+
+    if (activeReferences > 0) {
+      throw new BadRequestException(
+        'Cannot delete clothes item as it is currently referenced in active (PENDING or APPROVED) quotes and/or orders. Cancel those quotes/orders first.',
+      );
+    }
+
+    try {
+      await this.clothesRepository.softDelete({ id: clothesId, tenantId });
+      return { message: 'Clothes item successfully deleted' };
+    } catch (error) {
+      this.logger.error(
+        { err: error, id: clothesId, tenantId },
+        'Error deleting clothes item',
+      );
+      throw new BadRequestException('Error deleting clothes item');
+    }
+  }
+}

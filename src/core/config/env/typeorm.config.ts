@@ -1,0 +1,71 @@
+import { registerAs } from '@nestjs/config';
+import { ClothesVariantEntity } from 'src/modules/clothes/entities/clothes-variant.entity';
+import { ClothesEntity } from 'src/modules/clothes/entities/clothes.entity';
+import { GenderEntity } from 'src/modules/clothes/entities/gender.entity';
+import { ClotheImageEntity } from 'src/modules/clothes/entities/images.entity';
+import { SizeEntity } from 'src/modules/clothes/entities/size.entity';
+import { CustomerEntity } from 'src/modules/customer/entities/customer.entity';
+import { EmployeeEntity } from 'src/modules/employee/entities/employee.entity';
+import { AddressEntity } from 'src/modules/order/entities/address.entity';
+import { OrderEntity } from 'src/modules/order/entities/order.entity';
+import { QuoteDetailEntity } from 'src/modules/quote/entities/quote-detail.entity';
+import { QuoteEntity } from 'src/modules/quote/entities/quote.entity';
+import { TenantEntity } from 'src/modules/tenant/entities/tenant.entity';
+
+export default registerAs('typeorm', () => {
+  const { DB_HOST, DB_PORT, DB_USERNAME, DB_PASSWORD, DB_NAME, DB_SSL } =
+    process.env;
+
+  const missingVars = [
+    ['DB_HOST', DB_HOST],
+    ['DB_PORT', DB_PORT],
+    ['DB_USERNAME', DB_USERNAME],
+    ['DB_NAME', DB_NAME],
+  ]
+    .filter(
+      ([, value]) => typeof value !== 'string' || value.trim().length === 0,
+    )
+    .map(([name]) => name);
+
+  if (missingVars.length) {
+    throw new Error(
+      `Missing required database env vars: ${missingVars.join(', ')}`,
+    );
+  }
+
+  if (!DB_PORT || isNaN(Number(DB_PORT))) {
+    throw new Error(`DB_PORT must be a valid number, got: ${DB_PORT}`);
+  }
+
+  return {
+    type: 'postgres',
+    host: DB_HOST,
+    port: DB_PORT,
+    username: DB_USERNAME,
+    password: DB_PASSWORD,
+    database: DB_NAME,
+    entities: [
+      CustomerEntity,
+      EmployeeEntity,
+      ClothesVariantEntity,
+      ClotheImageEntity,
+      ClothesEntity,
+      SizeEntity,
+      GenderEntity,
+      QuoteEntity,
+      QuoteDetailEntity,
+      OrderEntity,
+      AddressEntity,
+      TenantEntity,
+    ],
+    synchronize: process.env.NODE_ENV !== 'production',
+    ssl:
+      DB_SSL === 'true'
+        ? {
+            require: true,
+            rejectUnauthorized: false,
+          }
+        : false,
+    uuidExtension: 'pgcrypto',
+  };
+});

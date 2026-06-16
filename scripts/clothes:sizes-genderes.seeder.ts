@@ -1,9 +1,9 @@
 import * as dotenv from 'dotenv';
 import { DataSource } from 'typeorm';
-import { GenderEntity } from '../src/clothes/entities/gender.entity';
-import { SizeEntity } from '../src/clothes/entities/size.entity';
-import { CLOTHES_SIZES } from '../src/clothes/enum/size.enum';
-import { CLOTHES_GENDER } from '../src/clothes/enum/gender.enum';
+import { GenderEntity } from '../src/modules/clothes/entities/gender.entity';
+import { SizeEntity } from '../src/modules/clothes/entities/size.entity';
+import { CLOTHES_SIZES } from '../src/modules/clothes/enum/size.enum';
+import { CLOTHES_GENDER } from '../src/modules/clothes/enum/gender.enum';
 
 dotenv.config({ path: '.env.seed' });
 
