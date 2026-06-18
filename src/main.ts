@@ -19,19 +19,23 @@ async function bootstrap() {
     }),
   );
 
-  const config = new DocumentBuilder()
+  let config = new DocumentBuilder()
     .setTitle('Telar API')
     .setDescription('API documentation for the Telar application')
-    .setVersion('1.0.0')
-    .build();
+    .setVersion('1.0.0');
 
-  const documentFactory = () => SwaggerModule.createDocument(app, config);
+  const apiStage = configService.get('api').stage;
+  config = apiStage ? config.addServer(`/${apiStage}`) : config;
+
+  const documentFactory = () =>
+    SwaggerModule.createDocument(app, config.build());
 
   SwaggerModule.setup('docs', app, documentFactory, {
     useGlobalPrefix: true,
   });
 
   const PORT = configService.get('api').port;
+  console.log(`Starting server on port ${PORT}...`);
   await app.listen(PORT);
 }
 bootstrap();
