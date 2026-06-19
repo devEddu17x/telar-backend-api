@@ -7,7 +7,6 @@ import { CLOTHES_GENDER } from '../src/modules/clothes/enum/gender.enum';
 
 dotenv.config({ path: '.env.seed' });
 
-// Database connection configuration
 const { DB_HOST, DB_PORT, DB_USERNAME, DB_PASSWORD, DB_NAME, DB_SSL } =
   process.env;
 

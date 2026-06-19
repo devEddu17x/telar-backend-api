@@ -11,10 +11,12 @@ import { QuoteModule } from './modules/quote/quote.module';
 import { OrderModule } from './modules/order/order.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { TenantModule } from './modules/tenant/tenant.module';
+import { DatabaseSeederModule } from './core/database-seeder/database-seeder.module';
 @Module({
   imports: [
     AuthModule,
     ConfigModule,
+    DatabaseSeederModule,
     CustomerModule,
     EmployeeModule,
     ClothesModule,

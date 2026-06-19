@@ -6,6 +6,6 @@ export class GenderEntity {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ type: 'enum', enum: CLOTHES_GENDER, nullable: false })
+  @Column({ type: 'enum', enum: CLOTHES_GENDER, nullable: false, unique: true })
   gender: CLOTHES_GENDER;
 }
