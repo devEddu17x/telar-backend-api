@@ -5,8 +5,8 @@ export default registerAs('s3', () => {
     IMAGES_BUCKET_NAME,
     IMAGES_BUCKET_REGION,
     IMAGES_BUCKET_REGIONAL_DOMAIN_NAME,
-    AWS_ACCESS_KEY_ID,
-    AWS_SECRET_ACCESS_KEY,
+    IMAGES_AWS_ACCESS_KEY_ID,
+    IMAGES_AWS_SECRET_ACCESS_KEY,
   } = process.env;
 
   const missingVars = [
@@ -24,10 +24,10 @@ export default registerAs('s3', () => {
   }
 
   const credentials =
-    AWS_ACCESS_KEY_ID && AWS_SECRET_ACCESS_KEY
+    IMAGES_AWS_ACCESS_KEY_ID && IMAGES_AWS_SECRET_ACCESS_KEY
       ? {
-          accessKeyId: AWS_ACCESS_KEY_ID,
-          secretAccessKey: AWS_SECRET_ACCESS_KEY,
+          accessKeyId: IMAGES_AWS_ACCESS_KEY_ID,
+          secretAccessKey: IMAGES_AWS_SECRET_ACCESS_KEY,
         }
       : undefined;
 
