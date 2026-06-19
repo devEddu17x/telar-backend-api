@@ -6,6 +6,6 @@ export class SizeEntity {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ type: 'enum', enum: CLOTHES_SIZES, nullable: false })
+  @Column({ type: 'enum', enum: CLOTHES_SIZES, nullable: false, unique: true })
   size: CLOTHES_SIZES;
 }
