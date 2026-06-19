@@ -12,3 +12,9 @@ export function ApiDocConfirmEmail() {
 export function ApiDocResendCode() {
   return applyDecorators(ApiOperation({ summary: 'Resend confirmation code' }));
 }
+
+export function ApiDocLogin() {
+  return applyDecorators(
+    ApiOperation({ summary: 'Login with email and password' }),
+  );
+}

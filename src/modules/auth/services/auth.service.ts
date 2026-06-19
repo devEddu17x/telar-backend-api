@@ -175,4 +175,18 @@ export class AuthService {
   async resendConfirmationCode(email: string) {
     return await this.cognitoService.resendConfirmationCode(email);
   }
+
+  async login(email: string, password: string) {
+    try {
+      const tokens = await this.cognitoService.initiateAuth(email, password);
+      this.logger.info({ email: maskEmail(email) }, 'User authenticated');
+      return tokens;
+    } catch (error) {
+      this.logger.error(
+        { err: error, email: maskEmail(email) },
+        'Login attempt failed',
+      );
+      throw error;
+    }
+  }
 }
