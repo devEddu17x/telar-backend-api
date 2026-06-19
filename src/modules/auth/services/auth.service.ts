@@ -89,12 +89,27 @@ export class AuthService {
       tenantId,
     );
 
-    const sub = cognitoResult.user?.User?.Username;
+    const sub = cognitoResult.user?.User?.Attributes?.find(
+      (attribute) => attribute.Name === 'sub',
+    )?.Value;
+
+    if (!sub) {
+      const deleteResult = await this.cognitoService.deleteUser(params.email);
+      const message = deleteResult.success
+        ? 'Cognito user was rolled back successfully.'
+        : 'Failed to roll back Cognito user after missing sub in Cognito response.';
+      this.logger.error(
+        { err: deleteResult.error, email: maskEmail(params.email), tenantId },
+        message,
+      );
+      throw new InternalServerErrorException('Could not create user');
+    }
+
     try {
-      await this.cognitoService.addRole(sub, role);
+      await this.cognitoService.addRole(params.email, role);
     } catch (error) {
       this.logger.error(
-        { err: error, sub, role, tenantId },
+        { err: error, sub, email: maskEmail(params.email), role, tenantId },
         'Error assigning role to employee. Cognito user will be rolled back.',
       );
       const deleteResult = await this.cognitoService.deleteUser(params.email);
