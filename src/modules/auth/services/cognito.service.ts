@@ -4,6 +4,7 @@ import {
   InternalServerErrorException,
   BadRequestException,
   NotFoundException,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { PinoLogger } from 'nestjs-pino';
 import {
@@ -20,6 +21,7 @@ import {
   AdminDeleteUserAttributesCommand,
   AdminListGroupsForUserCommand,
   AdminRemoveUserFromGroupCommand,
+  InitiateAuthCommand,
 } from '@aws-sdk/client-cognito-identity-provider';
 import { ConfigService } from '@nestjs/config';
 import {
@@ -347,6 +349,44 @@ export class CognitoService {
         `Cognito ResendConfirmationCode Error [${error.name}]: ${error.message}`,
       );
       throw new BadRequestException(`Failed to resend code`);
+    }
+  }
+
+  async initiateAuth(
+    email: string,
+    password: string,
+  ): Promise<{ accessToken: string; idToken: string; refreshToken: string }> {
+    try {
+      const command = new InitiateAuthCommand({
+        AuthFlow: 'USER_PASSWORD_AUTH',
+        ClientId: this.clientId,
+        AuthParameters: {
+          USERNAME: email,
+          PASSWORD: password,
+        },
+      });
+
+      const response = await this.cognitoClient.send(command);
+      return {
+        accessToken: response.AuthenticationResult!.AccessToken!,
+        idToken: response.AuthenticationResult!.IdToken!,
+        refreshToken: response.AuthenticationResult!.RefreshToken!,
+      };
+    } catch (error: any) {
+      if (
+        error.name === 'NotAuthorizedException' ||
+        error.name === 'UserNotFoundException'
+      ) {
+        throw new UnauthorizedException('Invalid credentials');
+      }
+      if (error.name === 'UserNotConfirmedException') {
+        throw new BadRequestException('Email is not confirmed');
+      }
+      this.logger.error(
+        { err: error, email: maskEmail(email) },
+        `Cognito InitiateAuth Error [${error.name}]: ${error.message}`,
+      );
+      throw new InternalServerErrorException('Could not authenticate user');
     }
   }
 
