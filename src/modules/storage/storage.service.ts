@@ -17,10 +17,10 @@ export class StorageService {
   private bucket: string;
   private url: string;
   constructor(private readonly configService: ConfigService) {
-    const storage = this.configService.get('s3');
+    const storage = this.configService.get('storage');
     this.s3 = new S3Client(storage.config);
     this.bucket = storage.bucket;
-    this.url = storage.baseUrlImages;
+    this.url = storage.publicUrl;
   }
 
   buildTempKey(tenantId: string, prendaId: string, filename: string) {
