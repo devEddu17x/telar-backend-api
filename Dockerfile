@@ -30,6 +30,8 @@ RUN apk add --no-cache tzdata && \
 COPY --chown=nestjs:nestjs --from=prod-deps /app/node_modules ./node_modules
 COPY --chown=nestjs:nestjs --from=build /app/dist ./dist
 COPY --chown=nestjs:nestjs package.json ./
+COPY --chown=nestjs:nestjs docker-entrypoint.sh ./docker-entrypoint.sh
+RUN chmod +x ./docker-entrypoint.sh
 
 USER nestjs
 
@@ -38,4 +40,5 @@ EXPOSE 3000
 HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
     CMD wget -q -O /dev/null "http://127.0.0.1:${API_PORT}/${API_PREFIX}/health" || exit 1
 
+ENTRYPOINT ["./docker-entrypoint.sh"]
 CMD ["node", "dist/main.js"]
