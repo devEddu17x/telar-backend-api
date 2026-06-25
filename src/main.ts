@@ -22,7 +22,7 @@ async function bootstrap() {
 
   let config = new DocumentBuilder()
     .setTitle('Telar API')
-    .setDescription('API documentation for the Telar application')
+    .setDescription('API documentation for the Telar web application')
     .addBearerAuth()
     .setVersion('1.0.0');
 
