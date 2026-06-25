@@ -122,10 +122,35 @@ jobs:
         shell: bash
         run: echo "IMAGE_URI=${ECR_REPOSITORY_URL}:${IMAGE_TAG}" >> "$GITHUB_ENV"
 
+      - name: Check image in Amazon ECR
+        id: check-image
+        shell: bash
+        run: |
+          set +e
+          output="$(aws ecr describe-images \
+            --repository-name "${ECR_REPOSITORY_NAME}" \
+            --image-ids imageTag="${IMAGE_TAG}" \
+            --output json 2>&1)"
+          status="$?"
+          set -e
+
+          if [ "$status" -eq 0 ]; then
+            echo "Image already exists in ECR: ${IMAGE_URI}"
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          elif [[ "$output" == *"ImageNotFoundException"* ]]; then
+            echo "Image does not exist in ECR yet: ${IMAGE_URI}"
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "$output"
+            exit "$status"
+          fi
+
       - name: Log in to Amazon ECR
+        if: steps.check-image.outputs.exists != 'true'
         uses: aws-actions/amazon-ecr-login@v2
 
       - name: Build and push image
+        if: steps.check-image.outputs.exists != 'true'
         shell: bash
         run: |
           docker build \
