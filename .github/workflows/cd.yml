@@ -93,6 +93,7 @@ jobs:
         shell: bash
         run: |
           PARAMETERS_JSON="$(aws ssm get-parameters \
+            --with-decryption \
             --names \
               "${SSM_PREFIX}/AWS_REGION" \
               "${SSM_PREFIX}/ECR_REPOSITORY_NAME" \
