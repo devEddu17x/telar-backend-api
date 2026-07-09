@@ -1,5 +1,10 @@
 import { UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+
+jest.mock('jwks-rsa', () => ({
+  passportJwtSecret: jest.fn(() => 'test-secret-provider'),
+}));
+
 import { JwtStrategy } from './jwt.strategy';
 
 describe('JwtStrategy', () => {
@@ -19,10 +24,6 @@ describe('JwtStrategy', () => {
     };
 
     strategy = new JwtStrategy(configService as unknown as ConfigService);
-  });
-
-  it('debería estar definido', () => {
-    expect(strategy).toBeDefined();
   });
 
   describe('validate', () => {

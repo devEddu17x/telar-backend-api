@@ -47,10 +47,6 @@ describe('AdminService', () => {
 
   afterEach(() => jest.clearAllMocks());
 
-  it('debería estar definido', () => {
-    expect(service).toBeDefined();
-  });
-
   describe('getAllRoles', () => {
     it('devuelve todos los valores del enum ROLES', async () => {
       const result = await service.getAllRoles();

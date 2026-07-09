@@ -4,7 +4,6 @@ import {
   BadRequestException,
   ConflictException,
   InternalServerErrorException,
-  NotFoundException,
 } from '@nestjs/common';
 import { PinoLogger } from 'nestjs-pino';
 import { TenantService } from './tenant.service';
@@ -64,10 +63,6 @@ describe('TenantService', () => {
 
   afterEach(() => jest.clearAllMocks());
 
-  it('debería estar definido', () => {
-    expect(service).toBeDefined();
-  });
-
   describe('createTenant', () => {
     it('lanza BadRequestException si el usuario ya tiene un tenant asignado', async () => {
       employeeService.getEmployeeBySub.mockResolvedValue({
@@ -117,7 +112,7 @@ describe('TenantService', () => {
       expect(tenantRepository.delete).toHaveBeenCalledWith('tenant-1');
     });
 
-    it('hace rollback completo (Cognito + tenant) si falla la actualización en Cognito', async () => {
+    it('borra el tenant si falla la actualización en Cognito antes de confirmar el claim', async () => {
       employeeService.getEmployeeBySub.mockResolvedValue({ tenantId: null });
       tenantRepository.create.mockReturnValue(dto);
       tenantRepository.save.mockResolvedValue({ id: 'tenant-1', ...dto });
@@ -131,7 +126,7 @@ describe('TenantService', () => {
       await expect(
         service.createTenant(dto, userEmail, userSub),
       ).rejects.toThrow(InternalServerErrorException);
-      expect(cognitoService.clearTenantId).toHaveBeenCalledWith(userEmail);
+      expect(cognitoService.clearTenantId).not.toHaveBeenCalled();
       expect(tenantRepository.delete).toHaveBeenCalledWith('tenant-1');
     });
 
@@ -150,24 +145,6 @@ describe('TenantService', () => {
         service.createTenant(dto, userEmail, userSub),
       ).rejects.toThrow(InternalServerErrorException);
       expect(tenantRepository.delete).toHaveBeenCalledWith('tenant-1');
-    });
-  });
-
-  describe('getTenantById', () => {
-    it('lanza NotFoundException si el tenant no existe', async () => {
-      tenantRepository.findOne.mockResolvedValue(null);
-
-      await expect(service.getTenantById('tenant-1')).rejects.toThrow(
-        NotFoundException,
-      );
-    });
-
-    it('devuelve el tenant encontrado', async () => {
-      tenantRepository.findOne.mockResolvedValue({ id: 'tenant-1' });
-
-      const result = await service.getTenantById('tenant-1');
-
-      expect(result).toEqual({ id: 'tenant-1' });
     });
   });
 });

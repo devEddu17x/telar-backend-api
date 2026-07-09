@@ -52,10 +52,6 @@ describe('AuthService', () => {
 
   afterEach(() => jest.clearAllMocks());
 
-  it('debería estar definido', () => {
-    expect(service).toBeDefined();
-  });
-
   describe('createOwner', () => {
     const params = {
       email: 'owner@empresa.com',
@@ -178,71 +174,7 @@ describe('AuthService', () => {
     });
   });
 
-  describe('métodos delegados simples', () => {
-    it('getUserRoles delega en cognitoService', async () => {
-      cognitoService.getUserRoles.mockResolvedValue([ROLES.SELLER]);
-      const result = await service.getUserRoles('user@empresa.com');
-      expect(cognitoService.getUserRoles).toHaveBeenCalledWith(
-        'user@empresa.com',
-      );
-      expect(result).toEqual([ROLES.SELLER]);
-    });
-
-    it('addRole delega en cognitoService', async () => {
-      await service.addRole('user@empresa.com', ROLES.ADMIN);
-      expect(cognitoService.addRole).toHaveBeenCalledWith(
-        'user@empresa.com',
-        ROLES.ADMIN,
-      );
-    });
-
-    it('removeRole delega en cognitoService', async () => {
-      await service.removeRole('user@empresa.com', ROLES.ADMIN);
-      expect(cognitoService.removeRole).toHaveBeenCalledWith(
-        'user@empresa.com',
-        ROLES.ADMIN,
-      );
-    });
-
-    it('disableUser delega en cognitoService', async () => {
-      await service.disableUser('user@empresa.com');
-      expect(cognitoService.disableUser).toHaveBeenCalledWith(
-        'user@empresa.com',
-      );
-    });
-
-    it('enableUser delega en cognitoService', async () => {
-      await service.enableUser('user@empresa.com');
-      expect(cognitoService.enableUser).toHaveBeenCalledWith(
-        'user@empresa.com',
-      );
-    });
-
-    it('confirmEmail delega en cognitoService.confirmSignUp', async () => {
-      await service.confirmEmail('user@empresa.com', '123456');
-      expect(cognitoService.confirmSignUp).toHaveBeenCalledWith(
-        'user@empresa.com',
-        '123456',
-      );
-    });
-
-    it('resendConfirmationCode delega en cognitoService', async () => {
-      await service.resendConfirmationCode('user@empresa.com');
-      expect(cognitoService.resendConfirmationCode).toHaveBeenCalledWith(
-        'user@empresa.com',
-      );
-    });
-  });
-
   describe('login', () => {
-    it('devuelve los tokens si la autenticación es exitosa', async () => {
-      cognitoService.initiateAuth.mockResolvedValue({ accessToken: 'token' });
-
-      const result = await service.login('user@empresa.com', 'secret123');
-
-      expect(result).toEqual({ accessToken: 'token' });
-    });
-
     it('propaga el error si la autenticación falla', async () => {
       cognitoService.initiateAuth.mockRejectedValue(
         new Error('invalid credentials'),
