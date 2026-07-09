@@ -43,7 +43,7 @@ export class QuoteService {
       dto.customerId,
       tenantId,
     );
-    const variantsPrice = await this.getDetailUnitPrice(dto);
+    const variantsPrice = await this.getDetailUnitPrice(dto, tenantId);
     const total = this.calculateTotal(variantsPrice);
     const queryRunner = this.dataSource.createQueryRunner();
     try {
@@ -219,10 +219,13 @@ export class QuoteService {
       );
     }
 
-    const variantsPrice = await this.getDetailUnitPrice({
-      details: dto.details,
-      customerId: existingQuote.customerId,
-    } as CreateQuoteDTO);
+    const variantsPrice = await this.getDetailUnitPrice(
+      {
+        details: dto.details,
+        customerId: existingQuote.customerId,
+      } as CreateQuoteDTO,
+      tenantId,
+    );
 
     const newTotal = this.calculateTotal(variantsPrice);
 
@@ -390,6 +393,7 @@ export class QuoteService {
 
   private async getDetailUnitPrice(
     dto: CreateQuoteDTO,
+    tenantId: string,
   ): Promise<ClothesPrice[]> {
     const uniqueVariantsIds = [
       ...new Set(dto.details.map((d) => d.clothesVariantId)),
@@ -399,8 +403,22 @@ export class QuoteService {
         uniqueVariantsIds,
       );
 
+    if (
+      variants.length !== uniqueVariantsIds.length ||
+      variants.some((variant) => variant.tenantId !== tenantId)
+    ) {
+      throw new NotFoundException('No clothes variants found');
+    }
+
     const clothesId = [...new Set(variants.map((v) => v.clothesId))];
     const clothes = await this.clothesService.getClothesByIdsArray(clothesId);
+    if (
+      clothes.length !== clothesId.length ||
+      clothes.some((clothe) => clothe.tenantId !== tenantId)
+    ) {
+      throw new NotFoundException('Clothes item not found');
+    }
+
     const clothesMap = new Map(clothes.map((c) => [c.id, c]));
 
     const quantityMap = new Map(
