@@ -5,9 +5,6 @@ import type { LoggerOptions } from 'pino';
 export const pinoLoggerConfig = registerAs('pino-logger', (): Params => {
   const { NODE_ENV } = process.env;
   const isDevelopment = NODE_ENV !== 'production';
-  console.log(
-    `Pino Logger Config - Environment: ${NODE_ENV}, isDevelopment: ${isDevelopment}`,
-  );
   // Base configuration for Pino HTTP
   const baseConfig: Params = {
     pinoHttp: {
