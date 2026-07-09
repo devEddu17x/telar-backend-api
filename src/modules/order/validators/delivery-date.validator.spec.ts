@@ -15,22 +15,22 @@ describe('IsValidDeliveryDate', () => {
     return dto;
   };
 
-  it('falla si el valor está vacío', async () => {
+  it('fails when the value is empty', async () => {
     const errors = await validate(buildDto(''));
     expect(errors.length).toBeGreaterThan(0);
   });
 
-  it('falla si el valor no es una fecha válida', async () => {
-    const errors = await validate(buildDto('no-es-una-fecha'));
+  it('fails when the value is not a valid date', async () => {
+    const errors = await validate(buildDto('not-a-date'));
     expect(errors.length).toBeGreaterThan(0);
   });
 
-  it('falla si la fecha es anterior al día de hoy en Perú (UTC-5)', async () => {
-    const ayer = new Date();
-    ayer.setUTCDate(ayer.getUTCDate() - 2); // margen de sobra para cubrir el offset de zona horaria
-    const fechaPasada = ayer.toISOString().split('T')[0];
+  it("fails when the date is before today's date in Peru (UTC-5)", async () => {
+    const yesterday = new Date();
+    yesterday.setUTCDate(yesterday.getUTCDate() - 2);
+    const pastDate = yesterday.toISOString().split('T')[0];
 
-    const errors = await validate(buildDto(fechaPasada));
+    const errors = await validate(buildDto(pastDate));
 
     expect(errors.length).toBeGreaterThan(0);
     expect(errors[0].constraints).toEqual(
@@ -40,22 +40,22 @@ describe('IsValidDeliveryDate', () => {
     );
   });
 
-  it('pasa si la fecha es futura', async () => {
-    const futuro = new Date();
-    futuro.setUTCDate(futuro.getUTCDate() + 10);
-    const fechaFutura = futuro.toISOString().split('T')[0];
+  it('passes when the date is in the future', async () => {
+    const future = new Date();
+    future.setUTCDate(future.getUTCDate() + 10);
+    const futureDate = future.toISOString().split('T')[0];
 
-    const errors = await validate(buildDto(fechaFutura));
+    const errors = await validate(buildDto(futureDate));
 
     expect(errors.length).toBe(0);
   });
 
-  it('pasa si se envía la fecha con formato ISO completo (con hora)', async () => {
-    const futuro = new Date();
-    futuro.setUTCDate(futuro.getUTCDate() + 10);
-    const fechaFutura = `${futuro.toISOString().split('T')[0]}T15:30:00.000Z`;
+  it('passes when the date uses a full ISO timestamp', async () => {
+    const future = new Date();
+    future.setUTCDate(future.getUTCDate() + 10);
+    const futureDate = `${future.toISOString().split('T')[0]}T15:30:00.000Z`;
 
-    const errors = await validate(buildDto(fechaFutura));
+    const errors = await validate(buildDto(futureDate));
 
     expect(errors.length).toBe(0);
   });

@@ -23,7 +23,7 @@ describe('RolesGuard', () => {
 
   afterEach(() => jest.clearAllMocks());
 
-  it('permite el acceso si la ruta no tiene roles requeridos', async () => {
+  it('allows access when the route does not require roles', async () => {
     reflector.get.mockReturnValue(undefined);
 
     const result = await guard.canActivate(buildContext({ roles: [] }));
@@ -31,10 +31,10 @@ describe('RolesGuard', () => {
     expect(result).toBe(true);
   });
 
-  it('prioriza los roles definidos en el método por sobre los del controller', async () => {
+  it('uses method-level roles before controller-level roles', async () => {
     reflector.get
-      .mockReturnValueOnce([ROLES.ADMIN]) // roles del método
-      .mockReturnValueOnce([ROLES.SELLER]); // roles del controller (ignorados)
+      .mockReturnValueOnce([ROLES.ADMIN])
+      .mockReturnValueOnce([ROLES.SELLER]);
 
     const result = await guard.canActivate(
       buildContext({ roles: [ROLES.ADMIN] }),
@@ -43,7 +43,7 @@ describe('RolesGuard', () => {
     expect(result).toBe(true);
   });
 
-  it('deniega el acceso si el usuario no tiene roles', async () => {
+  it('denies access when the user has no roles', async () => {
     reflector.get.mockReturnValueOnce([ROLES.ADMIN]).mockReturnValueOnce([]);
 
     const result = await guard.canActivate(buildContext({ roles: [] }));
@@ -51,7 +51,7 @@ describe('RolesGuard', () => {
     expect(result).toBe(false);
   });
 
-  it('deniega el acceso si el usuario no tiene ninguno de los roles requeridos', async () => {
+  it('denies access when the user has none of the required roles', async () => {
     reflector.get.mockReturnValueOnce([ROLES.ADMIN]).mockReturnValueOnce([]);
 
     const result = await guard.canActivate(
@@ -61,7 +61,7 @@ describe('RolesGuard', () => {
     expect(result).toBe(false);
   });
 
-  it('el owner siempre tiene acceso, sin importar los roles requeridos', async () => {
+  it('always allows owners regardless of the required roles', async () => {
     reflector.get.mockReturnValueOnce([ROLES.ADMIN]).mockReturnValueOnce([]);
 
     const result = await guard.canActivate(
@@ -71,7 +71,7 @@ describe('RolesGuard', () => {
     expect(result).toBe(true);
   });
 
-  it('permite el acceso si el usuario tiene alguno de los roles requeridos', async () => {
+  it('allows access when the user has any required role', async () => {
     reflector.get
       .mockReturnValueOnce([ROLES.ADMIN, ROLES.SELLER])
       .mockReturnValueOnce([]);
