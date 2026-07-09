@@ -376,7 +376,8 @@ export class CognitoService {
     } catch (error: any) {
       if (
         error.name === 'NotAuthorizedException' ||
-        error.name === 'UserNotFoundException'
+        error.name === 'UserNotFoundException' ||
+        error.name === 'InvalidPasswordException'
       ) {
         throw new UnauthorizedException('Invalid credentials');
       }
