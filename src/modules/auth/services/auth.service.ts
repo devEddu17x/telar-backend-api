@@ -4,6 +4,7 @@ import {
   Inject,
   forwardRef,
   InternalServerErrorException,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { PinoLogger } from 'nestjs-pino';
 import { CognitoService } from './cognito.service';
@@ -197,6 +198,14 @@ export class AuthService {
       this.logger.info({ email: maskEmail(email) }, 'User authenticated');
       return tokens;
     } catch (error) {
+      if (
+        error instanceof UnauthorizedException ||
+        error instanceof BadRequestException
+      ) {
+        this.logger.info({ email: maskEmail(email) }, 'Login attempt rejected');
+        throw error;
+      }
+
       this.logger.error(
         { err: error, email: maskEmail(email) },
         'Login attempt failed',
