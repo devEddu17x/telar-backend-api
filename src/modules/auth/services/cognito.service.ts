@@ -43,6 +43,7 @@ export class CognitoService {
     this.logger.setContext(CognitoService.name);
     this.cognitoClient = new CognitoIdentityProviderClient({
       region: this.configService.get<string>('cognito.region'),
+      endpoint: this.configService.get<string>('cognito.endpoint'),
     });
     this.userPoolId = this.configService.get<string>('cognito.userPoolId');
     this.clientId = this.configService.get<string>('cognito.clientId');
