@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkou
+      - name: Checkout
         uses: actions/checkout@v6
 
       - name: Setup pnpm
@@ -38,8 +38,27 @@ jobs:
       - name: Lint
         run: pnpm run --if-present lint
 
-      - name: Test
-        run: pnpm run --if-present test
+      - name: Unit tests
+        run: pnpm test:unit
+
+      - name: Start integration test services
+        run: pnpm test:services:up
+
+      - name: Wait for integration test services
+        run: |
+          docker compose -f compose.test.yml ps
+          sleep 10
+
+      - name: Integration tests
+        run: pnpm test:integration
+
+      - name: Show integration service logs on failure
+        if: failure()
+        run: docker compose -f compose.test.yml logs
+
+      - name: Stop integration test services
+        if: always()
+        run: pnpm test:services:down
 
       - name: Build
         run: pnpm run build
