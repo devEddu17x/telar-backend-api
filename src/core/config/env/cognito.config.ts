@@ -6,6 +6,7 @@ export default registerAs('cognito', () => {
     AWS_COGNITO_REGION,
     AWS_COGNITO_CLIENT_ID,
     AWS_COGNITO_INTERNAL_AUTH_TOKEN,
+    AWS_COGNITO_ENDPOINT,
   } = process.env;
 
   const missingVars = [
@@ -30,5 +31,6 @@ export default registerAs('cognito', () => {
     region: AWS_COGNITO_REGION,
     clientId: AWS_COGNITO_CLIENT_ID,
     internalAuthToken: AWS_COGNITO_INTERNAL_AUTH_TOKEN,
+    endpoint: AWS_COGNITO_ENDPOINT,
   };
 });
