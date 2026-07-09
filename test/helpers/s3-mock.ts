@@ -1,8 +1,5 @@
-import {
-  CreateBucketCommand,
-  HeadBucketCommand,
-  S3Client,
-} from '@aws-sdk/client-s3';
+import { CreateBucketCommand, S3Client } from '@aws-sdk/client-s3';
+import { retry } from './retry';
 
 export function createTestS3Client(): S3Client {
   return new S3Client({
@@ -20,9 +17,16 @@ export async function ensureTestBucket(): Promise<void> {
   const client = createTestS3Client();
   const bucket = process.env.STORAGE_BUCKET_NAME!;
 
-  try {
-    await client.send(new HeadBucketCommand({ Bucket: bucket }));
-  } catch {
-    await client.send(new CreateBucketCommand({ Bucket: bucket }));
-  }
+  await retry(async () => {
+    try {
+      await client.send(new CreateBucketCommand({ Bucket: bucket }));
+    } catch (error: any) {
+      const statusCode = error?.$metadata?.httpStatusCode;
+      if (statusCode === 409 || error?.name === 'BucketAlreadyOwnedByYou') {
+        return;
+      }
+
+      throw error;
+    }
+  });
 }
