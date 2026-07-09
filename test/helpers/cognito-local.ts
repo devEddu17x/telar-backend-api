@@ -1,10 +1,13 @@
 import {
+  AdminConfirmSignUpCommand,
+  AdminGetUserCommand,
   CognitoIdentityProviderClient,
   CreateGroupCommand,
   CreateUserPoolClientCommand,
   CreateUserPoolCommand,
 } from '@aws-sdk/client-cognito-identity-provider';
 import { ROLES } from 'src/common/enum/roles';
+import { retry } from './retry';
 
 export function createTestCognitoClient(): CognitoIdentityProviderClient {
   return new CognitoIdentityProviderClient({
@@ -22,19 +25,21 @@ export async function createTestUserPool(): Promise<{
   clientId: string;
 }> {
   const client = createTestCognitoClient();
-  const pool = await client.send(
-    new CreateUserPoolCommand({
-      PoolName: `telar-test-${Date.now()}`,
-      UsernameAttributes: ['email'],
-      Schema: [
-        {
-          Name: 'tenant_id',
-          AttributeDataType: 'String',
-          Mutable: true,
-          Required: false,
-        },
-      ],
-    }),
+  const pool = await retry(() =>
+    client.send(
+      new CreateUserPoolCommand({
+        PoolName: `telar-test-${Date.now()}`,
+        UsernameAttributes: ['email'],
+        Schema: [
+          {
+            Name: 'tenant_id',
+            AttributeDataType: 'String',
+            Mutable: true,
+            Required: false,
+          },
+        ],
+      }),
+    ),
   );
 
   const userPoolId = pool.UserPool!.Id!;
@@ -67,4 +72,24 @@ export async function createTestUserPool(): Promise<{
   process.env.AWS_COGNITO_CLIENT_ID = clientId;
 
   return { userPoolId, clientId };
+}
+
+export async function adminConfirmTestUser(email: string): Promise<void> {
+  const client = createTestCognitoClient();
+  await client.send(
+    new AdminConfirmSignUpCommand({
+      UserPoolId: process.env.AWS_COGNITO_USER_POOL_ID,
+      Username: email,
+    }),
+  );
+}
+
+export async function getTestCognitoUser(email: string) {
+  const client = createTestCognitoClient();
+  return client.send(
+    new AdminGetUserCommand({
+      UserPoolId: process.env.AWS_COGNITO_USER_POOL_ID,
+      Username: email,
+    }),
+  );
 }
