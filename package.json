@@ -23,8 +23,8 @@
     "test:services:up": "docker compose -f docker-compose.test.yml up -d",
     "test:services:down": "docker compose -f docker-compose.test.yml down",
     "test:services:reset": "docker compose -f docker-compose.test.yml down -v && docker compose -f docker-compose.test.yml up -d",
-    "test:integration": "NODE_ENV=test jest --config ./test/jest-integration.json --runInBand",
-    "test:integration:watch": "NODE_ENV=test jest --config ./test/jest-integration.json --watch",
+    "test:integration": "NODE_OPTIONS=--experimental-vm-modules NODE_ENV=test jest --config ./test/jest-integration.json --runInBand",
+    "test:integration:watch": "NODE_OPTIONS=--experimental-vm-modules NODE_ENV=test jest --config ./test/jest-integration.json --watch",
     "test:db:up": "pnpm test:services:up",
     "test:db:down": "pnpm test:services:down",
     "test:db:reset": "pnpm test:services:reset",
@@ -64,6 +64,7 @@
   "devDependencies": {
     "@commitlint/cli": "^19.8.1",
     "@commitlint/config-conventional": "^19.8.1",
+    "@faker-js/faker": "^8.4.1",
     "@nestjs/cli": "^10.0.0",
     "@nestjs/schematics": "^10.0.0",
     "@nestjs/testing": "^10.0.0",
