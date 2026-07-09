@@ -27,19 +27,19 @@ describe('JwtStrategy', () => {
   });
 
   describe('validate', () => {
-    it('lanza UnauthorizedException si falta "sub" en el payload', async () => {
+    it('throws UnauthorizedException when the payload is missing "sub"', async () => {
       await expect(
         strategy.validate({ email: 'user@empresa.com' }),
       ).rejects.toThrow(UnauthorizedException);
     });
 
-    it('lanza UnauthorizedException si falta "email" en el payload', async () => {
+    it('throws UnauthorizedException when the payload is missing "email"', async () => {
       await expect(strategy.validate({ sub: 'user-1' })).rejects.toThrow(
         UnauthorizedException,
       );
     });
 
-    it('devuelve el usuario con tenantId y roles vacíos si no vienen en el token', async () => {
+    it('returns a user with empty tenantId and roles when optional claims are missing', async () => {
       const result = await strategy.validate({
         sub: 'user-1',
         email: 'user@empresa.com',
@@ -53,7 +53,7 @@ describe('JwtStrategy', () => {
       });
     });
 
-    it('mapea tenantId y roles de los claims custom de Cognito', async () => {
+    it('maps tenantId and roles from Cognito custom claims', async () => {
       const result = await strategy.validate({
         sub: 'user-1',
         email: 'user@empresa.com',

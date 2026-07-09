@@ -22,7 +22,7 @@ describe('RequireTenantGuard', () => {
 
   afterEach(() => jest.clearAllMocks());
 
-  it('permite el acceso si el decorador @SkipTenantCheck está presente', () => {
+  it('allows access when @SkipTenantCheck is present', () => {
     reflector.getAllAndOverride.mockReturnValue(true);
 
     const result = guard.canActivate(buildContext(undefined));
@@ -30,7 +30,7 @@ describe('RequireTenantGuard', () => {
     expect(result).toBe(true);
   });
 
-  it('lanza ForbiddenException si no hay usuario en el request', () => {
+  it('throws ForbiddenException when the request has no user', () => {
     reflector.getAllAndOverride.mockReturnValue(false);
 
     expect(() => guard.canActivate(buildContext(undefined))).toThrow(
@@ -38,7 +38,7 @@ describe('RequireTenantGuard', () => {
     );
   });
 
-  it('lanza ForbiddenException si el usuario no tiene tenantId', () => {
+  it('throws ForbiddenException when the user has no tenantId', () => {
     reflector.getAllAndOverride.mockReturnValue(false);
 
     expect(() => guard.canActivate(buildContext({ sub: 'user-1' }))).toThrow(
@@ -46,7 +46,7 @@ describe('RequireTenantGuard', () => {
     );
   });
 
-  it('permite el acceso si el usuario tiene tenantId', () => {
+  it('allows access when the user has tenantId', () => {
     reflector.getAllAndOverride.mockReturnValue(false);
 
     const result = guard.canActivate(

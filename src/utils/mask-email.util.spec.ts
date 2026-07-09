@@ -1,24 +1,24 @@
 import { maskEmail } from './mask-email.util';
 
 describe('maskEmail', () => {
-  it('enmascara la parte local dejando visibles los primeros 2 caracteres', () => {
+  it('masks the local part while keeping the first two characters visible', () => {
     expect(maskEmail('juanperez@gmail.com')).toBe('ju***@gmail.com');
   });
 
-  it('mantiene el dominio completo sin enmascarar', () => {
+  it('keeps the full domain visible', () => {
     expect(maskEmail('ana@empresa.com')).toBe('an***@empresa.com');
   });
 
-  it('devuelve string vacío si el email es undefined o vacío', () => {
+  it('returns an empty string for empty or undefined emails', () => {
     expect(maskEmail('')).toBe('');
     expect(maskEmail(undefined as unknown as string)).toBe('');
   });
 
-  it('maneja emails cuya parte local tiene menos de 2 caracteres', () => {
+  it('handles emails with a local part shorter than two characters', () => {
     expect(maskEmail('a@gmail.com')).toBe('a***@gmail.com');
   });
 
-  it('devuelve dominio vacío si el email no tiene "@"', () => {
+  it('returns an empty domain when the email does not contain "@"', () => {
     expect(maskEmail('sinarroba')).toBe('si***@');
   });
 });
