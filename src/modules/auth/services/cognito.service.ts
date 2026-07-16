@@ -98,6 +98,9 @@ export class CognitoService {
           { Name: 'family_name', Value: params.lastName },
           { Name: 'custom:tenant_id', Value: tenantId },
         ],
+        ClientMetadata: {
+          AWS_COGNITO_INTERNAL_AUTH_TOKEN: this.internalAuthToken,
+        },
         DesiredDeliveryMediums: ['EMAIL'],
       };
 
