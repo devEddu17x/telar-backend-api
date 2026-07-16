@@ -28,6 +28,7 @@ export class TenantController {
       createTenantDto,
       user.email,
       user.sub,
+      user,
     );
   }
 
