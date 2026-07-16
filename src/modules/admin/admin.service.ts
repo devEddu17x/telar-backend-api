@@ -29,6 +29,7 @@ export class AdminService {
     createEmployeeDTO: CreateEmployeeDTO,
     creatorTenantId: string,
     callerRoles: string[],
+    actor?: { sub?: string; email?: string; tenantId?: string },
   ) {
     if (
       createEmployeeDTO.role === CREATABLE_ROLES.ADMIN &&
@@ -45,14 +46,30 @@ export class AdminService {
       lastName: createEmployeeDTO.lastNames,
     };
 
-    return await this.authService.createEmployee(
+    const createdEmployee = await this.authService.createEmployee(
       employeeParams,
       createEmployeeDTO.role,
       creatorTenantId,
     );
+
+    this.logger.info(
+      {
+        tenantId: creatorTenantId,
+        targetEmail: maskEmail(createEmployeeDTO.email),
+        role: createEmployeeDTO.role,
+        actorSub: actor?.sub,
+        actorEmail: actor?.email ? maskEmail(actor.email) : undefined,
+      },
+      'Created employee account',
+    );
+
+    return createdEmployee;
   }
 
-  async getAllEmployees(tenantId: string): Promise<EmployeeWithRoles[]> {
+  async getAllEmployees(
+    tenantId: string,
+    actor?: { sub?: string; email?: string; tenantId?: string },
+  ): Promise<EmployeeWithRoles[]> {
     const employees = await this.employeeService.getAllEmployees(tenantId);
 
     const employeesWithRoles = await Promise.all(
@@ -73,6 +90,16 @@ export class AdminService {
       }),
     );
 
+    this.logger.info(
+      {
+        tenantId,
+        count: employeesWithRoles.length,
+        actorSub: actor?.sub,
+        actorEmail: actor?.email ? maskEmail(actor.email) : undefined,
+      },
+      'Listed employees with roles',
+    );
+
     return employeesWithRoles;
   }
 
@@ -81,6 +108,7 @@ export class AdminService {
     tenantId: string,
     callerRoles: string[],
     callerEmail: string,
+    actor?: { sub?: string; email?: string; tenantId?: string },
   ): Promise<{ message: string }> {
     const employee = await this.employeeService.getEmployee(id);
 
@@ -114,6 +142,17 @@ export class AdminService {
 
     try {
       await this.employeeService.updateEmployee(id, { isActive: false } as any);
+      this.logger.info(
+        {
+          tenantId,
+          targetEmail: maskEmail(employee.email),
+          actorSub: actor?.sub,
+          actorEmail: actor?.email
+            ? maskEmail(actor.email)
+            : maskEmail(callerEmail),
+        },
+        'Disabled employee',
+      );
     } catch (error) {
       this.logger.error(
         { err: error, email: maskEmail(employee.email) },
@@ -140,6 +179,7 @@ export class AdminService {
     tenantId: string,
     callerRoles: string[],
     callerEmail: string,
+    actor?: { sub?: string; email?: string; tenantId?: string },
   ): Promise<{ message: string }> {
     const employee = await this.employeeService.getEmployee(id);
 
@@ -171,6 +211,17 @@ export class AdminService {
 
     try {
       await this.employeeService.updateEmployee(id, { isActive: true } as any);
+      this.logger.info(
+        {
+          tenantId,
+          targetEmail: maskEmail(employee.email),
+          actorSub: actor?.sub,
+          actorEmail: actor?.email
+            ? maskEmail(actor.email)
+            : maskEmail(callerEmail),
+        },
+        'Reactivated employee',
+      );
     } catch (error) {
       this.logger.error(
         { err: error, email: maskEmail(employee.email) },
@@ -198,6 +249,7 @@ export class AdminService {
     tenantId: string,
     callerRoles: string[],
     callerSub: string,
+    actor?: { sub?: string; email?: string; tenantId?: string },
   ): Promise<{ message: string }> {
     const targetEmployee =
       await this.employeeService.getEmployeeByEmail(targetEmail);
@@ -224,12 +276,32 @@ export class AdminService {
     }
 
     if (currentRoles.includes(roleToAssign)) {
+      this.logger.info(
+        {
+          tenantId,
+          targetEmail: maskEmail(targetEmail),
+          role: roleToAssign,
+          actorSub: actor?.sub ?? callerSub,
+          actorEmail: actor?.email ? maskEmail(actor.email) : undefined,
+        },
+        'Employee already has role',
+      );
       return {
         message: `Employee ${maskEmail(targetEmail)} already has the role ${roleToAssign}`,
       };
     }
 
     await this.authService.addRole(targetEmail, roleToAssign);
+    this.logger.info(
+      {
+        tenantId,
+        targetEmail: maskEmail(targetEmail),
+        role: roleToAssign,
+        actorSub: actor?.sub ?? callerSub,
+        actorEmail: actor?.email ? maskEmail(actor.email) : undefined,
+      },
+      'Assigned role to employee',
+    );
     return {
       message: `Role ${roleToAssign} assigned successfully to ${maskEmail(targetEmail)}`,
     };
@@ -241,6 +313,7 @@ export class AdminService {
     tenantId: string,
     callerRoles: string[],
     callerSub: string,
+    actor?: { sub?: string; email?: string; tenantId?: string },
   ): Promise<{ message: string }> {
     const targetEmployee =
       await this.employeeService.getEmployeeByEmail(targetEmail);
@@ -267,12 +340,32 @@ export class AdminService {
     }
 
     if (!currentRoles.includes(roleToRevoke)) {
+      this.logger.info(
+        {
+          tenantId,
+          targetEmail: maskEmail(targetEmail),
+          role: roleToRevoke,
+          actorSub: actor?.sub ?? callerSub,
+          actorEmail: actor?.email ? maskEmail(actor.email) : undefined,
+        },
+        'Employee does not have role to revoke',
+      );
       return {
         message: `Employee ${maskEmail(targetEmail)} does not have the role ${roleToRevoke}`,
       };
     }
 
     await this.authService.removeRole(targetEmail, roleToRevoke);
+    this.logger.info(
+      {
+        tenantId,
+        targetEmail: maskEmail(targetEmail),
+        role: roleToRevoke,
+        actorSub: actor?.sub ?? callerSub,
+        actorEmail: actor?.email ? maskEmail(actor.email) : undefined,
+      },
+      'Revoked role from employee',
+    );
     return {
       message: `Role ${roleToRevoke} revoked successfully from ${maskEmail(targetEmail)}`,
     };

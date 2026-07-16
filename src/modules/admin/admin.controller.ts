@@ -51,6 +51,7 @@ export class AdminController {
       user.tenantId,
       user.roles,
       user.sub,
+      user,
     );
   }
 
@@ -66,6 +67,7 @@ export class AdminController {
       user.tenantId,
       user.roles,
       user.sub,
+      user,
     );
   }
 
@@ -79,13 +81,14 @@ export class AdminController {
       createEmployeeDTO,
       user.tenantId,
       user.roles,
+      user,
     );
   }
 
   @Get('employees')
   @ApiDocGetAllEmployees()
   async getAllEmployees(@CurrentUser() user: any) {
-    return await this.adminService.getAllEmployees(user.tenantId);
+    return await this.adminService.getAllEmployees(user.tenantId, user);
   }
 
   @Delete('employees/:id')
@@ -96,6 +99,7 @@ export class AdminController {
       user.tenantId,
       user.roles,
       user.email,
+      user,
     );
   }
 
@@ -107,6 +111,7 @@ export class AdminController {
       user.tenantId,
       user.roles,
       user.email,
+      user,
     );
   }
 }
