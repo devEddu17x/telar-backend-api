@@ -10,6 +10,7 @@ import { StorageService } from 'src/modules/storage/storage.service';
 import { Repository } from 'typeorm';
 import { ClotheImageEntity } from '../entities/images.entity';
 import { ClothesEntity } from '../entities/clothes.entity';
+import { maskEmail } from 'src/utils/mask-email.util';
 
 @Injectable()
 export class ClothesImagesService {
@@ -27,6 +28,7 @@ export class ClothesImagesService {
     clothesId: string,
     images: AllowedImagesDTO[],
     tenantId: string,
+    actor?: { sub?: string; email?: string; tenantId?: string },
   ): Promise<{ imageUrls: string[]; preSignedPuts: any[] }> {
     const clothe = await this.clothesRepository.findOne({
       where: { id: clothesId, tenantId },
@@ -43,6 +45,7 @@ export class ClothesImagesService {
         clothesId,
         images,
         tenantId,
+        actor,
         {
           ttlSeconds: 3600,
           cacheControl: 'no-cache',
@@ -62,6 +65,17 @@ export class ClothesImagesService {
         throw new BadRequestException('Error saving images');
       }
 
+      this.logger.info(
+        {
+          clothesId,
+          tenantId,
+          imageCount: savedImages.length,
+          actorSub: actor?.sub,
+          actorEmail: actor?.email ? maskEmail(actor.email) : undefined,
+        },
+        'Added images to clothes item',
+      );
+
       return {
         imageUrls,
         preSignedPuts,
@@ -79,6 +93,7 @@ export class ClothesImagesService {
     clothesId: string,
     imageUrl: string,
     tenantId: string,
+    actor?: { sub?: string; email?: string; tenantId?: string },
   ): Promise<{ message: string }> {
     const image = await this.imageRepository.findOne({
       where: {
@@ -112,6 +127,18 @@ export class ClothesImagesService {
 
       await this.imageRepository.delete(image.id);
 
+      this.logger.info(
+        {
+          clothesId,
+          tenantId,
+          imageUrl,
+          key,
+          actorSub: actor?.sub,
+          actorEmail: actor?.email ? maskEmail(actor.email) : undefined,
+        },
+        'Deleted image from clothes item',
+      );
+
       return {
         message: 'Image deleted successfully',
       };
@@ -128,6 +155,7 @@ export class ClothesImagesService {
     clothesId: string,
     imageUrls: string[],
     tenantId: string,
+    actor?: { sub?: string; email?: string; tenantId?: string },
   ): Promise<ClotheImageEntity[]> {
     const newImages = imageUrls.map((url) =>
       this.imageRepository.create({ url, clothesId, tenantId }),
@@ -136,6 +164,16 @@ export class ClothesImagesService {
     if (!savedImages || savedImages.length === 0) {
       throw new BadRequestException('Error saving images');
     }
+    this.logger.info(
+      {
+        clothesId,
+        tenantId,
+        imageCount: savedImages.length,
+        actorSub: actor?.sub,
+        actorEmail: actor?.email ? maskEmail(actor.email) : undefined,
+      },
+      'Added images to clothes item',
+    );
     return savedImages;
   }
 }

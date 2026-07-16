@@ -20,6 +20,7 @@ import { CreateDraftClothesDTO } from '../dto/create-draft-clothes.dto';
 import { CLOTHES_GENDER } from '../enum/gender.enum';
 import { CLOTHES_SIZES } from '../enum/size.enum';
 import { ClothesFilterOptions } from '../interfaces/filter-options.interface';
+import { maskEmail } from 'src/utils/mask-email.util';
 
 @Injectable()
 export class ClothesService {
@@ -38,11 +39,14 @@ export class ClothesService {
     private readonly quoteDetailRepository: Repository<QuoteDetailEntity>,
     private readonly dataSource: DataSource,
     private readonly logger: PinoLogger,
-  ) {}
+  ) {
+    this.logger.setContext(ClothesService.name);
+  }
 
   async createClothe(
     clothes: CreateClothesDTO,
     tenantId: string,
+    actor?: { sub?: string; email?: string; tenantId?: string },
   ): Promise<CreatedClothes> {
     const { name, description, price, variants } = clothes;
 
@@ -95,9 +99,24 @@ export class ClothesService {
       const savedVariants: ClothesVariantEntity[] =
         await queryRunner.manager.save(ClothesVariantEntity, newVariants);
       await queryRunner.commitTransaction();
+
+      this.logger.info(
+        {
+          tenantId,
+          clothesId: newClothe.id,
+          variantCount: savedVariants.length,
+          actorSub: actor?.sub,
+          actorEmail: actor?.email ? maskEmail(actor.email) : undefined,
+        },
+        'Created clothes item',
+      );
+
       return { ...newClothe, variants: savedVariants };
     } catch (error) {
-      console.log(error);
+      this.logger.error(
+        { err: error, tenantId, name },
+        'Error creating clothes item',
+      );
       await queryRunner.rollbackTransaction();
       throw new BadRequestException('Error creating the clothes item');
     } finally {
@@ -108,6 +127,7 @@ export class ClothesService {
   async createDraftClothe(
     clothes: CreateDraftClothesDTO,
     tenantId: string,
+    actor?: { sub?: string; email?: string; tenantId?: string },
   ): Promise<CreatedClothes> {
     const { name, price } = clothes;
     const newClothe = this.clothesRepository.create({
@@ -141,9 +161,24 @@ export class ClothesService {
         tenantId,
       });
       const savedVariant = await this.variantsRepository.save(newVariant);
+
+      this.logger.info(
+        {
+          tenantId,
+          clothesId: savedClothe.id,
+          variantCount: 1,
+          actorSub: actor?.sub,
+          actorEmail: actor?.email ? maskEmail(actor.email) : undefined,
+        },
+        'Created draft clothes item',
+      );
+
       return { ...savedClothe, variants: [savedVariant] };
     } catch (error) {
-      console.log(error);
+      this.logger.error(
+        { err: error, tenantId, name },
+        'Error creating draft clothes item',
+      );
       throw new BadRequestException('Error creating draft clothes item');
     }
   }
@@ -151,6 +186,7 @@ export class ClothesService {
   async getAllClothes(
     tenantId: string,
     filterOptions?: ClothesFilterOptions,
+    actor?: { sub?: string; email?: string; tenantId?: string },
   ): Promise<any> {
     try {
       const queryBuilder = this.clothesRepository
@@ -179,9 +215,23 @@ export class ClothesService {
         });
       }
       const clothes = await queryBuilder.getMany();
+
+      this.logger.info(
+        {
+          tenantId,
+          count: clothes.length,
+          hasFilters: Boolean(filterOptions),
+          actorSub: actor?.sub,
+          actorEmail: actor?.email ? maskEmail(actor.email) : undefined,
+        },
+        'Listed clothes items',
+      );
       return clothes;
     } catch (error) {
-      console.log(error);
+      this.logger.error(
+        { err: error, tenantId, filterOptions },
+        'Error fetching clothes items',
+      );
       throw new BadRequestException('Error fetching clothes items');
     }
   }
@@ -190,6 +240,7 @@ export class ClothesService {
     clothesId: string,
     tenantId: string,
     filterOptions?: ClothesFilterOptions,
+    actor?: { sub?: string; email?: string; tenantId?: string },
   ): Promise<any> {
     let clothe = null;
     try {
@@ -235,12 +286,25 @@ export class ClothesService {
 
       clothe = await queryBuilder.getOne();
     } catch (error) {
-      console.log(error);
+      this.logger.error(
+        { err: error, clothesId, tenantId, filterOptions },
+        'Error fetching the clothes item',
+      );
       throw new BadRequestException('Error fetching the clothes item');
     }
     if (!clothe) {
       throw new NotFoundException('Clothes item not found');
     }
+    this.logger.info(
+      {
+        tenantId,
+        clothesId,
+        hasFilters: Boolean(filterOptions),
+        actorSub: actor?.sub,
+        actorEmail: actor?.email ? maskEmail(actor.email) : undefined,
+      },
+      'Retrieved clothes item',
+    );
     return clothe;
   }
 
@@ -251,6 +315,10 @@ export class ClothesService {
         where: { id: In(clothesIds) },
       });
     } catch (error) {
+      this.logger.error(
+        { err: error, clothesIds },
+        'Error retrieving clothes items',
+      );
       throw new BadRequestException('Error retrieving clothes items');
     }
     return clothes;
@@ -260,6 +328,7 @@ export class ClothesService {
     clothesId: string,
     updateData: UpdateClothesDTO,
     tenantId: string,
+    actor?: { sub?: string; email?: string; tenantId?: string },
   ): Promise<ClothesEntity> {
     const clothe = await this.clothesRepository.findOne({
       where: { id: clothesId, tenantId },
@@ -281,11 +350,25 @@ export class ClothesService {
         updateData,
       );
 
+      this.logger.info(
+        {
+          clothesId,
+          tenantId,
+          updatedFields: Object.keys(updateData),
+          actorSub: actor?.sub,
+          actorEmail: actor?.email ? maskEmail(actor.email) : undefined,
+        },
+        'Updated clothes item',
+      );
+
       return await this.clothesRepository.findOne({
         where: { id: clothesId, tenantId },
       });
     } catch (error) {
-      console.log(error);
+      this.logger.error(
+        { err: error, clothesId, tenantId },
+        'Error updating clothes item',
+      );
       throw new BadRequestException('Error updating clothes item');
     }
   }
@@ -297,6 +380,7 @@ export class ClothesService {
     size?: string,
     gender?: string,
     filterOptions?: ClothesFilterOptions,
+    actor?: { sub?: string; email?: string; tenantId?: string },
   ): Promise<any[]> {
     try {
       let query = this.clothesRepository
@@ -358,9 +442,34 @@ export class ClothesService {
 
       const clothes = await query.getMany();
 
+      this.logger.info(
+        {
+          tenantId,
+          count: clothes.length,
+          hasNameFilter: Boolean(name && name.trim()),
+          hasDescriptionFilter: Boolean(description && description.trim()),
+          hasSizeFilter: Boolean(size && size.trim()),
+          hasGenderFilter: Boolean(gender && gender.trim()),
+          actorSub: actor?.sub,
+          actorEmail: actor?.email ? maskEmail(actor.email) : undefined,
+        },
+        'Searched and filtered clothes items',
+      );
+
       return clothes;
     } catch (error) {
-      console.log(error);
+      this.logger.error(
+        {
+          err: error,
+          tenantId,
+          name,
+          description,
+          size,
+          gender,
+          filterOptions,
+        },
+        'Error searching and filtering clothes',
+      );
       throw new BadRequestException('Error searching and filtering clothes');
     }
   }
@@ -380,7 +489,10 @@ export class ClothesService {
         draftClothes: clothes.map((c) => ({ id: c.id, name: c.name })),
       };
     } catch (error) {
-      console.log(error);
+      this.logger.error(
+        { err: error, clothesIds },
+        'Error checking draft clothes',
+      );
       throw new BadRequestException('Error checking draft clothes');
     }
   }
@@ -388,6 +500,7 @@ export class ClothesService {
   async deleteClothes(
     clothesId: string,
     tenantId: string,
+    actor?: { sub?: string; email?: string; tenantId?: string },
   ): Promise<{ message: string }> {
     const clothe = await this.clothesRepository.findOne({
       where: { id: clothesId, tenantId },
@@ -419,6 +532,15 @@ export class ClothesService {
 
     try {
       await this.clothesRepository.softDelete({ id: clothesId, tenantId });
+      this.logger.info(
+        {
+          clothesId,
+          tenantId,
+          actorSub: actor?.sub,
+          actorEmail: actor?.email ? maskEmail(actor.email) : undefined,
+        },
+        'Deleted clothes item',
+      );
       return { message: 'Clothes item successfully deleted' };
     } catch (error) {
       this.logger.error(
