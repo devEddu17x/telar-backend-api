@@ -37,13 +37,13 @@ export class OrderController {
   @Post()
   @ApiDocCreateOrder()
   async createOrder(@Body() dto: CreateOrderDTO, @CurrentUser() user: any) {
-    return await this.orderService.createOrder(dto, user.tenantId);
+    return await this.orderService.createOrder(dto, user.tenantId, user);
   }
 
   @Get()
   @ApiDocGetOrders()
   async getOrders(@CurrentUser() user: any) {
-    return await this.orderService.getOrders(user.tenantId);
+    return await this.orderService.getOrders(user.tenantId, user);
   }
 
   @Get(':id')
@@ -66,6 +66,7 @@ export class OrderController {
       id,
       dto.status,
       user.tenantId,
+      user,
     );
   }
 
@@ -76,7 +77,12 @@ export class OrderController {
     @Body() dto: CancelOrderDTO,
     @CurrentUser() user: any,
   ) {
-    return await this.orderService.cancelOrder(id, dto.reason, user.tenantId);
+    return await this.orderService.cancelOrder(
+      id,
+      dto.reason,
+      user.tenantId,
+      user,
+    );
   }
 
   @Roles(ROLES.OWNER, ROLES.ADMIN)
@@ -87,6 +93,6 @@ export class OrderController {
     @Param('id', ParseUUIDPipe) id: string,
     @CurrentUser() user: any,
   ) {
-    return await this.orderService.deleteOrder(id, user.tenantId);
+    return await this.orderService.deleteOrder(id, user.tenantId, user);
   }
 }

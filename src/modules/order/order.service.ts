@@ -15,6 +15,7 @@ import { QuoteStatus } from 'src/modules/quote/enums/status.enum';
 import { OrderSummary } from './interfaces/order-summary.interface';
 import { OrderStatus } from './enum/order-status.enum';
 import { ClothesService } from 'src/modules/clothes/services/clothes.service';
+import { maskEmail } from 'src/utils/mask-email.util';
 
 @Injectable()
 export class OrderService {
@@ -32,6 +33,7 @@ export class OrderService {
   async createOrder(
     dto: CreateOrderDTO,
     tenantId: string,
+    actor?: { sub?: string; email?: string; tenantId?: string },
   ): Promise<OrderEntity> {
     const quote = await this.quoteService.getQuoteById(dto.quoteId, tenantId);
 
@@ -86,19 +88,58 @@ export class OrderService {
         tenantId,
       });
       const savedOrder = await queryRunner.manager.save(order);
-      await this.quoteService.updateStatus(dto.quoteId, QuoteStatus.APPROVED);
+      await this.quoteService.updateStatus(
+        dto.quoteId,
+        QuoteStatus.APPROVED,
+        actor,
+      );
       await queryRunner.commitTransaction();
+
+      this.logger.info(
+        {
+          tenantId,
+          orderId: savedOrder.id,
+          quoteId: dto.quoteId,
+          total: savedOrder.total,
+          actorSub: actor?.sub,
+          actorEmail: actor?.email ? maskEmail(actor.email) : undefined,
+        },
+        'Created order',
+      );
+
       return savedOrder;
     } catch (error) {
       await queryRunner.rollbackTransaction();
+      this.logger.error(
+        { err: error, tenantId, quoteId: dto.quoteId, actorSub: actor?.sub },
+        'Error creating order',
+      );
       throw error;
     } finally {
       await queryRunner.release();
     }
   }
 
-  async getOrders(tenantId: string): Promise<OrderSummary[]> {
-    return this.fetchOrders(tenantId);
+  async getOrders(
+    tenantId: string,
+    actor?: { sub?: string; email?: string; tenantId?: string },
+  ): Promise<OrderSummary[]> {
+    const orders = await this.fetchOrders(
+      tenantId,
+      undefined,
+      undefined,
+      actor,
+    );
+    this.logger.info(
+      {
+        tenantId,
+        count: orders.length,
+        actorSub: actor?.sub,
+        actorEmail: actor?.email ? maskEmail(actor.email) : undefined,
+      },
+      'Listed orders',
+    );
+    return orders;
   }
 
   async getOrderById(id: string, tenantId: string): Promise<OrderEntity> {
@@ -123,6 +164,7 @@ export class OrderService {
     id: string,
     status: OrderStatus,
     tenantId: string,
+    actor?: { sub?: string; email?: string; tenantId?: string },
   ): Promise<any> {
     try {
       const currentOrder = await this.orderRepository.findOne({
@@ -162,7 +204,20 @@ export class OrderService {
         throw new NotFoundException(`Order with ID ${id} not found`);
       }
 
-      return this.orderRepository.findOne({ where: { id, tenantId } });
+      const updatedOrder = await this.orderRepository.findOne({
+        where: { id, tenantId },
+      });
+      this.logger.info(
+        {
+          id,
+          tenantId,
+          status,
+          actorSub: actor?.sub,
+          actorEmail: actor?.email ? maskEmail(actor.email) : undefined,
+        },
+        'Updated order status',
+      );
+      return updatedOrder;
     } catch (error) {
       if (error instanceof NotFoundException) {
         throw error;
@@ -178,6 +233,7 @@ export class OrderService {
     id: string,
     reason: string,
     tenantId: string,
+    actor?: { sub?: string; email?: string; tenantId?: string },
   ): Promise<OrderEntity> {
     try {
       const existingOrder = await this.orderRepository.findOne({
@@ -206,6 +262,17 @@ export class OrderService {
       const cancelledOrder = await this.orderRepository.findOne({
         where: { id, tenantId },
       });
+
+      this.logger.info(
+        {
+          id,
+          tenantId,
+          actorSub: actor?.sub,
+          actorEmail: actor?.email ? maskEmail(actor.email) : undefined,
+        },
+        'Cancelled order',
+      );
+
       return cancelledOrder;
     } catch (error) {
       if (error instanceof NotFoundException) {
@@ -221,8 +288,20 @@ export class OrderService {
   async getOrdersByStatus(
     status: OrderStatus,
     tenantId: string,
+    actor?: { sub?: string; email?: string; tenantId?: string },
   ): Promise<OrderSummary[]> {
-    return this.fetchOrders(tenantId, undefined, status);
+    const orders = await this.fetchOrders(tenantId, undefined, status, actor);
+    this.logger.info(
+      {
+        tenantId,
+        status,
+        count: orders.length,
+        actorSub: actor?.sub,
+        actorEmail: actor?.email ? maskEmail(actor.email) : undefined,
+      },
+      'Listed orders by status',
+    );
+    return orders;
   }
 
   /**
@@ -236,6 +315,7 @@ export class OrderService {
     tenantId: string,
     orderId?: string,
     status?: OrderStatus,
+    actor?: { sub?: string; email?: string; tenantId?: string },
   ): Promise<OrderSummary[]> {
     const queryBuilder = this.buildOrderSummaryQuery();
 
@@ -262,6 +342,18 @@ export class OrderService {
         : 'No orders found';
       throw new NotFoundException(message);
     }
+
+    this.logger.info(
+      {
+        tenantId,
+        orderId,
+        status,
+        count: result.length,
+        actorSub: actor?.sub,
+        actorEmail: actor?.email ? maskEmail(actor.email) : undefined,
+      },
+      'Fetched order summaries',
+    );
 
     return result;
   }
@@ -353,6 +445,7 @@ export class OrderService {
   async deleteOrder(
     id: string,
     tenantId: string,
+    actor?: { sub?: string; email?: string; tenantId?: string },
   ): Promise<{ message: string }> {
     try {
       const existingOrder = await this.orderRepository.findOne({
@@ -385,7 +478,10 @@ export class OrderService {
       if (error instanceof NotFoundException) {
         throw error;
       }
-      this.logger.error({ err: error, id, tenantId }, 'Error deleting order');
+      this.logger.error(
+        { err: error, id, tenantId, actorSub: actor?.sub },
+        'Error deleting order',
+      );
       throw new BadRequestException('Error deleting order');
     }
   }
