@@ -16,7 +16,7 @@ export class EmployeeController {
   async getEmployee(
     @CurrentUser() user: any,
   ): Promise<EmployeeEntity & { roles: string[] }> {
-    return await this.employeeService.getMe(user.sub, user.roles);
+    return await this.employeeService.getMe(user.sub, user.roles, user);
   }
 
   @Patch()
@@ -29,6 +29,7 @@ export class EmployeeController {
       user.sub,
       user.email,
       updateEmployeeDTO,
+      user,
     );
   }
 }
