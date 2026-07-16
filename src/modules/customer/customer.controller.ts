@@ -40,13 +40,14 @@ export class CustomerController {
     return await this.customerService.createCustomer(
       customerDTO,
       user.tenantId,
+      user,
     );
   }
 
   @Get()
   @ApiDocGetAllCustomers()
   async getAllCustomers(@CurrentUser() user: any): Promise<CustomerEntity[]> {
-    return await this.customerService.getAllCustomers(user.tenantId);
+    return await this.customerService.getAllCustomers(user.tenantId, user);
   }
 
   @Get('search')
@@ -62,6 +63,7 @@ export class CustomerController {
       names,
       lastNames,
       phone,
+      user,
     );
   }
 
@@ -76,6 +78,7 @@ export class CustomerController {
       id,
       customerDTO,
       user.tenantId,
+      user,
     );
   }
 }
