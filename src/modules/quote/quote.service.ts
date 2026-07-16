@@ -18,6 +18,7 @@ import { QuoteSummary } from './interfaces/clothes-data.interface';
 import { CreatedClothes } from './interfaces/created-clothes.interface';
 import { UpdateQuoteDTO } from './dtos/update-quote.dto';
 import { ClothesVariantsService } from 'src/modules/clothes/services/clothes-variants.service';
+import { maskEmail } from 'src/utils/mask-email.util';
 
 @Injectable()
 export class QuoteService {
@@ -36,6 +37,7 @@ export class QuoteService {
   async createQuote(
     dto: CreateQuoteDTO,
     tenantId: string,
+    actor?: { sub?: string; email?: string; tenantId?: string },
   ): Promise<CreatedClothes> {
     this.validateCustomizations(dto.details);
 
@@ -78,20 +80,58 @@ export class QuoteService {
         detailsToSave,
       );
       await queryRunner.commitTransaction();
+      this.logger.info(
+        {
+          tenantId,
+          quoteId: newQuote.id,
+          customerId: customer.id,
+          total,
+          detailCount: savedDetails.length,
+          actorSub: actor?.sub,
+          actorEmail: actor?.email ? maskEmail(actor.email) : undefined,
+        },
+        'Created quote',
+      );
       return { ...newQuote, details: savedDetails };
     } catch (error) {
       await queryRunner.rollbackTransaction();
+      this.logger.error(
+        {
+          err: error,
+          tenantId,
+          customerId: dto.customerId,
+          actorSub: actor?.sub,
+        },
+        'Error creating quote',
+      );
       throw new BadRequestException('Error creating quote');
     } finally {
       await queryRunner.release();
     }
   }
 
-  async getAll(tenantId: string): Promise<QuoteSummary[]> {
-    return this.fetchQuotes(tenantId);
+  async getAll(
+    tenantId: string,
+    actor?: { sub?: string; email?: string; tenantId?: string },
+  ): Promise<QuoteSummary[]> {
+    const quotes = await this.fetchQuotes(tenantId, undefined, actor);
+    this.logger.info(
+      {
+        tenantId,
+        count: quotes.length,
+        actorSub: actor?.sub,
+        actorEmail: actor?.email ? maskEmail(actor.email) : undefined,
+      },
+      'Listed quotes',
+    );
+    return quotes;
   }
 
-  async getQuoteById(id: string, tenantId: string): Promise<QuoteEntity> {
+  async getQuoteById(
+    id: string,
+    tenantId: string,
+    actor?: { sub?: string; email?: string; tenantId?: string },
+  ): Promise<QuoteEntity> {
     try {
       const quote = await this.quoteRepository.findOne({
         where: { id, tenantId },
@@ -106,6 +146,15 @@ export class QuoteService {
       if (!quote) {
         throw new NotFoundException(`Quote with ID ${id} not found`);
       }
+      this.logger.info(
+        {
+          tenantId,
+          quoteId: id,
+          actorSub: actor?.sub,
+          actorEmail: actor?.email ? maskEmail(actor.email) : undefined,
+        },
+        'Retrieved quote',
+      );
       return quote;
     } catch (error) {
       if (error instanceof NotFoundException) {
@@ -115,7 +164,11 @@ export class QuoteService {
     }
   }
 
-  async updateStatus(id: string, status: QuoteStatus): Promise<QuoteEntity> {
+  async updateStatus(
+    id: string,
+    status: QuoteStatus,
+    actor?: { sub?: string; email?: string; tenantId?: string },
+  ): Promise<QuoteEntity> {
     try {
       const currentQuote = await this.quoteRepository.findOne({
         where: { id },
@@ -144,6 +197,15 @@ export class QuoteService {
       if (!updatedQuote) {
         throw new NotFoundException('Quote not found after update');
       }
+      this.logger.info(
+        {
+          quoteId: id,
+          status,
+          actorSub: actor?.sub,
+          actorEmail: actor?.email ? maskEmail(actor.email) : undefined,
+        },
+        'Updated quote status',
+      );
       return updatedQuote;
     } catch (error) {
       if (error instanceof NotFoundException) {
@@ -159,11 +221,27 @@ export class QuoteService {
   async getQuotesByStatus(
     status: QuoteStatus,
     tenantId: string,
+    actor?: { sub?: string; email?: string; tenantId?: string },
   ): Promise<QuoteSummary[]> {
-    return this.fetchQuotes(tenantId, status);
+    const quotes = await this.fetchQuotes(tenantId, status, actor);
+    this.logger.info(
+      {
+        tenantId,
+        status,
+        count: quotes.length,
+        actorSub: actor?.sub,
+        actorEmail: actor?.email ? maskEmail(actor.email) : undefined,
+      },
+      'Listed quotes by status',
+    );
+    return quotes;
   }
 
-  async cancelQuote(id: string, tenantId: string): Promise<QuoteEntity> {
+  async cancelQuote(
+    id: string,
+    tenantId: string,
+    actor?: { sub?: string; email?: string; tenantId?: string },
+  ): Promise<QuoteEntity> {
     const existingQuote = await this.quoteRepository.findOne({
       where: { id, tenantId },
     });
@@ -192,6 +270,16 @@ export class QuoteService {
       relations: ['customer'],
     });
 
+    this.logger.info(
+      {
+        tenantId,
+        quoteId: id,
+        actorSub: actor?.sub,
+        actorEmail: actor?.email ? maskEmail(actor.email) : undefined,
+      },
+      'Cancelled quote',
+    );
+
     return cancelledQuote;
   }
 
@@ -199,6 +287,7 @@ export class QuoteService {
     id: string,
     dto: UpdateQuoteDTO,
     tenantId: string,
+    actor?: { sub?: string; email?: string; tenantId?: string },
   ): Promise<CreatedClothes> {
     this.validateCustomizations(dto.details);
     this.validateNoDuplicateVariants(dto.details);
@@ -276,10 +365,25 @@ export class QuoteService {
         where: { id },
       });
 
+      this.logger.info(
+        {
+          tenantId,
+          quoteId: id,
+          total: newTotal,
+          detailCount: savedDetails.length,
+          actorSub: actor?.sub,
+          actorEmail: actor?.email ? maskEmail(actor.email) : undefined,
+        },
+        'Updated quote',
+      );
+
       return { ...updatedQuote, details: savedDetails };
     } catch (error) {
       await queryRunner.rollbackTransaction();
-      console.error('Error updating quote:', error);
+      this.logger.error(
+        { err: error, id, tenantId, actorSub: actor?.sub },
+        'Error updating quote',
+      );
       throw new BadRequestException('Error updating quote');
     } finally {
       await queryRunner.release();
@@ -294,6 +398,7 @@ export class QuoteService {
   private async fetchQuotes(
     tenantId: string,
     status?: QuoteStatus,
+    actor?: { sub?: string; email?: string; tenantId?: string },
   ): Promise<QuoteSummary[]> {
     try {
       // Build base query
@@ -318,6 +423,17 @@ export class QuoteService {
           : 'No quotes found';
         throw new NotFoundException(message);
       }
+
+      this.logger.info(
+        {
+          tenantId,
+          status,
+          count: result.length,
+          actorSub: actor?.sub,
+          actorEmail: actor?.email ? maskEmail(actor.email) : undefined,
+        },
+        'Fetched quote summaries',
+      );
 
       return result;
     } catch (error) {
@@ -490,6 +606,7 @@ export class QuoteService {
   async deleteQuote(
     id: string,
     tenantId: string,
+    actor?: { sub?: string; email?: string; tenantId?: string },
   ): Promise<{ message: string }> {
     const queryRunner = this.dataSource.createQueryRunner();
     try {
@@ -522,6 +639,15 @@ export class QuoteService {
       }
 
       await queryRunner.commitTransaction();
+      this.logger.info(
+        {
+          tenantId,
+          quoteId: id,
+          actorSub: actor?.sub,
+          actorEmail: actor?.email ? maskEmail(actor.email) : undefined,
+        },
+        'Deleted quote',
+      );
       return { message: 'Quote successfully deleted' };
     } catch (error) {
       await queryRunner.rollbackTransaction();
@@ -531,7 +657,10 @@ export class QuoteService {
       ) {
         throw error;
       }
-      this.logger.error({ err: error, id, tenantId }, 'Error deleting quote');
+      this.logger.error(
+        { err: error, id, tenantId, actorSub: actor?.sub },
+        'Error deleting quote',
+      );
       throw new BadRequestException('Error deleting quote');
     } finally {
       await queryRunner.release();
