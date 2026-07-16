@@ -6,17 +6,26 @@ import {
 } from '@aws-sdk/client-s3';
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { PinoLogger } from 'nestjs-pino';
 import { randomUUID } from 'crypto';
 import { FilePlan } from './interfaces/file-plan.interface';
 import { PresignedPut } from './interfaces/presigned-url.interface';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+import { maskEmail } from 'src/utils/mask-email.util';
+
+type PresignedPutOptions = { ttlSeconds?: number; cacheControl?: string };
+type ActorContext = { sub?: string; email?: string; tenantId?: string };
 
 @Injectable()
 export class StorageService {
   private s3: S3Client;
   private bucket: string;
   private url: string;
-  constructor(private readonly configService: ConfigService) {
+  constructor(
+    private readonly configService: ConfigService,
+    private readonly logger?: PinoLogger,
+  ) {
+    this.logger?.setContext(StorageService.name);
     const storage = this.configService.get('storage');
     this.s3 = new S3Client(storage.config);
     this.bucket = storage.bucket;
@@ -32,11 +41,16 @@ export class StorageService {
     prendaId: string,
     files: FilePlan[],
     tenantId: string,
-    opts?: { ttlSeconds?: number; cacheControl?: string },
+    arg4?: PresignedPutOptions | ActorContext,
+    arg5?: PresignedPutOptions,
   ): Promise<PresignedPut[]> {
     if (!files || files.length === 0) {
       return [];
     }
+    const isOptions =
+      !!arg4 && ('ttlSeconds' in arg4 || 'cacheControl' in arg4);
+    const opts = (isOptions ? arg4 : arg5) ?? {};
+    const actor = isOptions ? undefined : (arg4 as ActorContext | undefined);
     const ttl = opts?.ttlSeconds ?? 600; // 10 min
     const cacheControl = opts?.cacheControl ?? 'no-cache';
 
@@ -63,6 +77,18 @@ export class StorageService {
         },
       });
     }
+
+    this.logger?.info(
+      {
+        tenantId,
+        clothesId: prendaId,
+        fileCount: results.length,
+        actorSub: actor?.sub,
+        actorEmail: actor?.email ? maskEmail(actor.email) : undefined,
+      },
+      'Generated presigned upload URLs for clothes images',
+    );
+
     return results;
   }
 
@@ -96,9 +122,10 @@ export class StorageService {
       await this.s3.send(
         new DeleteObjectCommand({ Bucket: this.bucket, Key: key }),
       );
+      this.logger?.info({ key }, 'Deleted object from storage');
       return true;
     } catch (error) {
-      console.error('Error deleting object from S3:', error);
+      this.logger?.error({ err: error, key }, 'Error deleting object from S3');
       return false;
     }
   }

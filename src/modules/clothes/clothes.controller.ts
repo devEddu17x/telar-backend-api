@@ -62,12 +62,13 @@ export class ClothesController {
     @CurrentUser() user: any,
   ): Promise<CreatedClothes & { preSignedPuts: PresignedPut[] }> {
     const createdClothes: CreatedClothes =
-      await this.clothesService.createClothe(clothesDto, user.tenantId);
+      await this.clothesService.createClothe(clothesDto, user.tenantId, user);
     const preSignedPuts: PresignedPut[] | [] =
       await this.storageService.createPresignedPuts(
         createdClothes.id,
         clothesDto.images,
         user.tenantId,
+        user,
         { ttlSeconds: 3600, cacheControl: 'no-cache' },
       );
 
@@ -77,10 +78,12 @@ export class ClothesController {
       createdClothes.id,
       imageUrls,
       user.tenantId,
+      user,
     );
     if (!savedImages || savedImages.length === 0) {
       throw new Error('Failed to save image URLs to the database');
     }
+
     return { ...createdClothes, preSignedPuts };
   }
 
@@ -95,6 +98,7 @@ export class ClothesController {
       await this.clothesService.createDraftClothe(
         draftClothesDto,
         user.tenantId,
+        user,
       );
 
     const preSignedPuts: PresignedPut[] | [] =
@@ -102,6 +106,7 @@ export class ClothesController {
         createdClothes.id,
         draftClothesDto.images,
         user.tenantId,
+        user,
         { ttlSeconds: 3600, cacheControl: 'no-cache' },
       );
 
@@ -111,10 +116,12 @@ export class ClothesController {
       createdClothes.id,
       imageUrls,
       user.tenantId,
+      user,
     );
     if (!savedImages || savedImages.length === 0) {
       throw new Error('Failed to save image URLs to the database');
     }
+
     return { ...createdClothes, preSignedPuts };
   }
 
@@ -124,7 +131,7 @@ export class ClothesController {
     // this method should return different data based on the user's role:
     // - if the user is an admin, return all clothes with all details
     // - if the user is a seller, return only clothes that are not drafts (actually this should be discussed, maybe sellers should also see their own drafts?)
-    return this.clothesService.getAllClothes(user.tenantId);
+    return this.clothesService.getAllClothes(user.tenantId, undefined, user);
   }
 
   @Get('search')
@@ -142,6 +149,8 @@ export class ClothesController {
       description,
       size,
       gender,
+      undefined,
+      user,
     );
   }
 
@@ -151,7 +160,12 @@ export class ClothesController {
     @Param('id', ParseUUIDPipe) clothesId: string,
     @CurrentUser() user: any,
   ): Promise<any> {
-    return this.clothesService.getClothesById(clothesId, user.tenantId);
+    return this.clothesService.getClothesById(
+      clothesId,
+      user.tenantId,
+      undefined,
+      user,
+    );
   }
 
   @Patch(':id')
@@ -165,6 +179,7 @@ export class ClothesController {
       clothesId,
       updateClothesDto,
       user.tenantId,
+      user,
     );
   }
 
@@ -179,6 +194,7 @@ export class ClothesController {
       clothesId,
       variantDto,
       user.tenantId,
+      user,
     );
   }
 
@@ -195,6 +211,7 @@ export class ClothesController {
       variantId,
       updateVariantDto,
       user.tenantId,
+      user,
     );
   }
 
@@ -209,6 +226,7 @@ export class ClothesController {
       clothesId,
       variantId,
       user.tenantId,
+      user,
     );
   }
 
@@ -223,6 +241,7 @@ export class ClothesController {
       clothesId,
       addImagesDto.images,
       user.tenantId,
+      user,
     );
   }
 
@@ -237,6 +256,7 @@ export class ClothesController {
       clothesId,
       deleteImageDto.url,
       user.tenantId,
+      user,
     );
   }
 
@@ -248,6 +268,6 @@ export class ClothesController {
     @Param('id', ParseUUIDPipe) clothesId: string,
     @CurrentUser() user: any,
   ): Promise<{ message: string }> {
-    return this.clothesService.deleteClothes(clothesId, user.tenantId);
+    return this.clothesService.deleteClothes(clothesId, user.tenantId, user);
   }
 }

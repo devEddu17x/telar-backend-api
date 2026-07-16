@@ -3,19 +3,28 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { PinoLogger } from 'nestjs-pino';
 import { CreateCustomerDTO } from '../dtos/create-customer.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { CustomerEntity } from '../entities/customer.entity';
 import { Repository } from 'typeorm';
 import { UpdateCustomerDTO } from '../dtos/update-customer.dto';
+import { maskEmail } from 'src/utils/mask-email.util';
 
 @Injectable()
 export class CustomerService {
   constructor(
     @InjectRepository(CustomerEntity)
     private readonly customerRepository: Repository<CustomerEntity>,
-  ) {}
-  async createCustomer(customerDTO: CreateCustomerDTO, tenantId: string) {
+    private readonly logger: PinoLogger,
+  ) {
+    this.logger.setContext(CustomerService.name);
+  }
+  async createCustomer(
+    customerDTO: CreateCustomerDTO,
+    tenantId: string,
+    actor?: { sub?: string; email?: string; tenantId?: string },
+  ) {
     const newCustomer = this.customerRepository.create({
       ...customerDTO,
       tenantId,
@@ -27,10 +36,23 @@ export class CustomerService {
       );
     }
 
+    this.logger.info(
+      {
+        tenantId,
+        customerId: createdUser.id,
+        actorSub: actor?.sub,
+        actorEmail: actor?.email ? maskEmail(actor.email) : undefined,
+      },
+      'Created customer',
+    );
+
     return createdUser;
   }
 
-  async getAllCustomers(tenantId: string): Promise<CustomerEntity[]> {
+  async getAllCustomers(
+    tenantId: string,
+    actor?: { sub?: string; email?: string; tenantId?: string },
+  ): Promise<CustomerEntity[]> {
     let customers: CustomerEntity[];
     try {
       customers = await this.customerRepository.find({ where: { tenantId } });
@@ -40,10 +62,23 @@ export class CustomerService {
     if (!customers || customers.length === 0) {
       throw new NotFoundException('No customers found');
     }
+    this.logger.info(
+      {
+        tenantId,
+        count: customers.length,
+        actorSub: actor?.sub,
+        actorEmail: actor?.email ? maskEmail(actor.email) : undefined,
+      },
+      'Listed customers',
+    );
     return customers;
   }
 
-  async getCustomerById(id: string, tenantId: string): Promise<CustomerEntity> {
+  async getCustomerById(
+    id: string,
+    tenantId: string,
+    actor?: { sub?: string; email?: string; tenantId?: string },
+  ): Promise<CustomerEntity> {
     let customer: CustomerEntity;
     try {
       customer = await this.customerRepository.findOne({
@@ -55,6 +90,15 @@ export class CustomerService {
     if (!customer) {
       throw new NotFoundException('Customer not found');
     }
+    this.logger.info(
+      {
+        tenantId,
+        customerId: id,
+        actorSub: actor?.sub,
+        actorEmail: actor?.email ? maskEmail(actor.email) : undefined,
+      },
+      'Retrieved customer',
+    );
     return customer;
   }
 
@@ -62,6 +106,7 @@ export class CustomerService {
     id: string,
     customerDTO: UpdateCustomerDTO,
     tenantId: string,
+    actor?: { sub?: string; email?: string; tenantId?: string },
   ) {
     const result = await this.customerRepository.update(
       { id, tenantId },
@@ -72,7 +117,16 @@ export class CustomerService {
         'Customer not found or you do not have permission',
       );
     }
-    return this.getCustomerById(id, tenantId);
+    this.logger.info(
+      {
+        tenantId,
+        customerId: id,
+        actorSub: actor?.sub,
+        actorEmail: actor?.email ? maskEmail(actor.email) : undefined,
+      },
+      'Updated customer',
+    );
+    return this.getCustomerById(id, tenantId, actor);
   }
 
   async searchCustomers(
@@ -80,6 +134,7 @@ export class CustomerService {
     names?: string,
     lastNames?: string,
     phone?: string,
+    actor?: { sub?: string; email?: string; tenantId?: string },
   ): Promise<CustomerEntity[]> {
     if (!names && !lastNames && !phone) {
       return [];
@@ -109,6 +164,19 @@ export class CustomerService {
       }
 
       const customers = await query.getMany();
+
+      this.logger.info(
+        {
+          tenantId,
+          count: customers.length,
+          hasNamesFilter: Boolean(names && names.trim()),
+          hasLastNamesFilter: Boolean(lastNames && lastNames.trim()),
+          hasPhoneFilter: Boolean(phone && phone.trim()),
+          actorSub: actor?.sub,
+          actorEmail: actor?.email ? maskEmail(actor.email) : undefined,
+        },
+        'Searched customers',
+      );
       return customers;
     } catch (error) {
       throw new BadRequestException('Error searching customers');

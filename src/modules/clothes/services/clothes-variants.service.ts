@@ -7,11 +7,13 @@ import { UpdateVariantDTO } from '../dto/update-variant.dto';
 import { Variant } from '../dto/variants.dto';
 import { ClothesVariantEntity } from '../entities/clothes-variant.entity';
 import { InjectRepository } from '@nestjs/typeorm';
+import { PinoLogger } from 'nestjs-pino';
 import { In, Repository } from 'typeorm';
 import { ClothesEntity } from '../entities/clothes.entity';
 import { SizeEntity } from '../entities/size.entity';
 import { QuoteDetailEntity } from 'src/modules/quote/entities/quote-detail.entity';
 import { GenderEntity } from '../entities/gender.entity';
+import { maskEmail } from 'src/utils/mask-email.util';
 
 @Injectable()
 export class ClothesVariantsService {
@@ -26,11 +28,15 @@ export class ClothesVariantsService {
     private readonly genderRepository: Repository<GenderEntity>,
     @InjectRepository(QuoteDetailEntity)
     private readonly quoteDetailRepository: Repository<QuoteDetailEntity>,
-  ) {}
+    private readonly logger: PinoLogger,
+  ) {
+    this.logger.setContext(ClothesVariantsService.name);
+  }
   async addVariantToClothes(
     clothesId: string,
     variantData: Variant,
     tenantId: string,
+    actor?: { sub?: string; email?: string; tenantId?: string },
   ): Promise<ClothesVariantEntity> {
     const clothe = await this.clothesRepository.findOne({
       where: { id: clothesId, tenantId },
@@ -81,9 +87,27 @@ export class ClothesVariantsService {
         tenantId,
       });
 
-      return await this.variantsRepository.save(newVariant);
+      const savedVariant = await this.variantsRepository.save(newVariant);
+
+      this.logger.info(
+        {
+          clothesId,
+          tenantId,
+          size: variantData.size,
+          gender: variantData.gender,
+          variantId: savedVariant.id,
+          actorSub: actor?.sub,
+          actorEmail: actor?.email ? maskEmail(actor.email) : undefined,
+        },
+        'Created clothes variant',
+      );
+
+      return savedVariant;
     } catch (error) {
-      console.log(error);
+      this.logger.error(
+        { err: error, clothesId, tenantId, variantData },
+        'Error adding variant to clothes item',
+      );
       throw new BadRequestException('Error adding variant to clothes item');
     }
   }
@@ -93,6 +117,7 @@ export class ClothesVariantsService {
     variantId: string,
     updateData: UpdateVariantDTO,
     tenantId: string,
+    actor?: { sub?: string; email?: string; tenantId?: string },
   ): Promise<ClothesVariantEntity> {
     const clothe = await this.clothesRepository.findOne({
       where: { id: clothesId, tenantId },
@@ -126,11 +151,26 @@ export class ClothesVariantsService {
         },
       );
 
+      this.logger.info(
+        {
+          clothesId,
+          tenantId,
+          variantId,
+          additional: updateData.additional,
+          actorSub: actor?.sub,
+          actorEmail: actor?.email ? maskEmail(actor.email) : undefined,
+        },
+        'Updated clothes variant',
+      );
+
       return await this.variantsRepository.findOne({
         where: { id: variantId, tenantId },
       });
     } catch (error) {
-      console.log(error);
+      this.logger.error(
+        { err: error, clothesId, tenantId, variantId },
+        'Error updating variant',
+      );
       throw new BadRequestException('Error updating variant');
     }
   }
@@ -139,6 +179,7 @@ export class ClothesVariantsService {
     clothesId: string,
     variantId: string,
     tenantId: string,
+    actor?: { sub?: string; email?: string; tenantId?: string },
   ): Promise<{ message: string }> {
     const clothe = await this.clothesRepository.findOne({
       where: { id: clothesId, tenantId },
@@ -176,11 +217,24 @@ export class ClothesVariantsService {
 
     try {
       await this.variantsRepository.delete({ id: variantId, tenantId });
+      this.logger.info(
+        {
+          clothesId,
+          tenantId,
+          variantId,
+          actorSub: actor?.sub,
+          actorEmail: actor?.email ? maskEmail(actor.email) : undefined,
+        },
+        'Deleted clothes variant',
+      );
       return {
         message: 'Variant deleted successfully',
       };
     } catch (error) {
-      console.log(error);
+      this.logger.error(
+        { err: error, clothesId, tenantId, variantId },
+        'Error deleting variant',
+      );
       throw new BadRequestException('Error deleting variant');
     }
   }
@@ -193,6 +247,10 @@ export class ClothesVariantsService {
         where: { id: In(clothesIds) },
       });
     } catch (error) {
+      this.logger.error(
+        { err: error, clothesIds },
+        'Error retrieving clothes variants',
+      );
       throw new BadRequestException('Error retrieving clothes variants');
     }
     if (!clothes || clothes.length === 0) {

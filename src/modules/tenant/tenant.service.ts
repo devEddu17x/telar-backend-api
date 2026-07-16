@@ -30,6 +30,7 @@ export class TenantService {
     dto: CreateTenantDto,
     userEmail: string,
     userSub: string,
+    actor?: { sub?: string; email?: string; tenantId?: string },
   ): Promise<TenantEntity> {
     const employee = await this.employeeService.getEmployeeBySub(userSub);
     if (employee.tenantId) {
@@ -60,6 +61,19 @@ export class TenantService {
       await this.cognitoService.setTenantId(userEmail, savedTenant.id);
       cognitoUpdated = true;
 
+      this.logger.info(
+        {
+          tenantId: savedTenant.id,
+          targetEmail: maskEmail(userEmail),
+          userSub,
+          actorSub: actor?.sub ?? userSub,
+          actorEmail: actor?.email
+            ? maskEmail(actor.email)
+            : maskEmail(userEmail),
+        },
+        'Created tenant workspace',
+      );
+
       return savedTenant;
     } catch (error) {
       this.logger.error(
@@ -89,6 +103,7 @@ export class TenantService {
     if (!tenant) {
       throw new NotFoundException('Tenant not found');
     }
+    this.logger.info({ tenantId: id }, 'Retrieved tenant');
     return tenant;
   }
 }

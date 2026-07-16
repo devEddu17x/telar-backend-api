@@ -30,6 +30,7 @@ export class EmployeeService {
     sub: string,
     employeeData: { email: string; names: string; lastNames: string },
     tenantId?: string,
+    actor?: { sub?: string; email?: string; tenantId?: string },
   ): Promise<EmployeeEntity> {
     try {
       const employee = this.employeeRepository.create({
@@ -37,7 +38,18 @@ export class EmployeeService {
         ...employeeData,
         tenantId,
       });
-      return await this.employeeRepository.save(employee);
+      const savedEmployee = await this.employeeRepository.save(employee);
+      this.logger.info(
+        {
+          sub,
+          tenantId,
+          employeeId: savedEmployee.id,
+          actorSub: actor?.sub,
+          actorEmail: actor?.email ? maskEmail(actor.email) : undefined,
+        },
+        'Created employee',
+      );
+      return savedEmployee;
     } catch (error) {
       this.logger.error(
         { err: error, sub, tenantId },
@@ -93,6 +105,7 @@ export class EmployeeService {
   async updateEmployee(
     id: string,
     updateEmployeeDTO: UpdateEmployeeDTO,
+    actor?: { sub?: string; email?: string; tenantId?: string },
   ): Promise<EmployeeEntity> {
     if (!id)
       throw new BadRequestException(
@@ -105,15 +118,35 @@ export class EmployeeService {
     if (response.affected === 0) {
       throw new BadRequestException('Employee not found');
     }
-    return await this.employeeRepository.findOneBy({ id });
+    const updatedEmployee = await this.employeeRepository.findOneBy({ id });
+    this.logger.info(
+      {
+        id,
+        actorSub: actor?.sub,
+        actorEmail: actor?.email ? maskEmail(actor.email) : undefined,
+      },
+      'Updated employee',
+    );
+    return updatedEmployee;
   }
 
-  async deleteEmployee(id: string): Promise<void> {
+  async deleteEmployee(
+    id: string,
+    actor?: { sub?: string; email?: string; tenantId?: string },
+  ): Promise<void> {
     try {
       const result = await this.employeeRepository.delete(id);
       if (result.affected === 0) {
         throw new BadRequestException('Employee not found');
       }
+      this.logger.info(
+        {
+          id,
+          actorSub: actor?.sub,
+          actorEmail: actor?.email ? maskEmail(actor.email) : undefined,
+        },
+        'Deleted employee',
+      );
     } catch (error) {
       this.logger.error({ id }, 'Error deleting employee or does not exist');
       throw new BadRequestException(
@@ -122,21 +155,42 @@ export class EmployeeService {
     }
   }
 
-  async getAllEmployees(tenantId: string): Promise<EmployeeEntity[]> {
+  async getAllEmployees(
+    tenantId: string,
+    actor?: { sub?: string; email?: string; tenantId?: string },
+  ): Promise<EmployeeEntity[]> {
     const employees = await this.employeeRepository.find({
       where: { tenantId },
     });
     if (!employees || employees.length === 0) {
       return [];
     }
+    this.logger.info(
+      {
+        tenantId,
+        count: employees.length,
+        actorSub: actor?.sub,
+        actorEmail: actor?.email ? maskEmail(actor.email) : undefined,
+      },
+      'Listed employees',
+    );
     return employees;
   }
 
   async getMe(
     sub: string,
     roles: string[],
+    actor?: { sub?: string; email?: string; tenantId?: string },
   ): Promise<EmployeeEntity & { roles: string[] }> {
     const employee = await this.getEmployeeBySub(sub);
+    this.logger.info(
+      {
+        sub,
+        actorSub: actor?.sub,
+        actorEmail: actor?.email ? maskEmail(actor.email) : undefined,
+      },
+      'Retrieved employee profile',
+    );
     return { ...employee, roles };
   }
 
@@ -144,6 +198,7 @@ export class EmployeeService {
     sub: string,
     email: string,
     updateEmployeeDTO: UpdateEmployeeDTO,
+    actor?: { sub?: string; email?: string; tenantId?: string },
   ): Promise<EmployeeEntity> {
     const employee = await this.getEmployeeBySub(sub);
     const originalLocalData = {
@@ -154,6 +209,7 @@ export class EmployeeService {
     const updatedEmployee = await this.updateEmployee(
       employee.id,
       updateEmployeeDTO,
+      actor,
     );
 
     if (updateEmployeeDTO.names || updateEmployeeDTO.lastNames) {
@@ -168,10 +224,20 @@ export class EmployeeService {
           { err: error, email: maskEmail(email) },
           'Failed to update Cognito attributes, rolling back local database',
         );
-        await this.updateEmployee(employee.id, originalLocalData);
+        await this.updateEmployee(employee.id, originalLocalData, actor);
         throw error;
       }
     }
+
+    this.logger.info(
+      {
+        sub,
+        employeeId: employee.id,
+        actorSub: actor?.sub,
+        actorEmail: actor?.email ? maskEmail(actor.email) : undefined,
+      },
+      'Updated my profile',
+    );
     return updatedEmployee;
   }
 }

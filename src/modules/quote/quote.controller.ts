@@ -46,7 +46,7 @@ export class QuoteController {
     @Body() dto: CreateQuoteDTO,
     @CurrentUser() user: any,
   ): Promise<CreatedClothes> {
-    return this.quoteService.createQuote(dto, user.tenantId);
+    return this.quoteService.createQuote(dto, user.tenantId, user);
   }
 
   @Get()
@@ -56,14 +56,14 @@ export class QuoteController {
     @Query('status') status?: QuoteStatus,
   ): Promise<QuoteSummary[]> {
     if (!status) {
-      return this.quoteService.getAll(user.tenantId);
+      return this.quoteService.getAll(user.tenantId, user);
     }
     if (!Object.values(QuoteStatus).includes(status)) {
       throw new BadRequestException(
         `Invalid status. Valid values: ${Object.values(QuoteStatus).join(', ')}`,
       );
     }
-    return this.quoteService.getQuotesByStatus(status, user.tenantId);
+    return this.quoteService.getQuotesByStatus(status, user.tenantId, user);
   }
 
   @Get(':id')
@@ -72,7 +72,7 @@ export class QuoteController {
     @Param('id', ParseUUIDPipe) id: string,
     @CurrentUser() user: any,
   ): Promise<QuoteEntity> {
-    return this.quoteService.getQuoteById(id, user.tenantId);
+    return this.quoteService.getQuoteById(id, user.tenantId, user);
   }
 
   @Put(':id')
@@ -82,7 +82,7 @@ export class QuoteController {
     @Body() dto: UpdateQuoteDTO,
     @CurrentUser() user: any,
   ): Promise<CreatedClothes> {
-    return this.quoteService.updateQuote(id, dto, user.tenantId);
+    return this.quoteService.updateQuote(id, dto, user.tenantId, user);
   }
 
   @Patch(':id/cancel')
@@ -91,7 +91,7 @@ export class QuoteController {
     @Param('id', ParseUUIDPipe) id: string,
     @CurrentUser() user: any,
   ): Promise<QuoteEntity> {
-    return this.quoteService.cancelQuote(id, user.tenantId);
+    return this.quoteService.cancelQuote(id, user.tenantId, user);
   }
 
   @Delete(':id')
@@ -100,6 +100,6 @@ export class QuoteController {
     @Param('id', ParseUUIDPipe) id: string,
     @CurrentUser() user: any,
   ): Promise<{ message: string }> {
-    return this.quoteService.deleteQuote(id, user.tenantId);
+    return this.quoteService.deleteQuote(id, user.tenantId, user);
   }
 }
