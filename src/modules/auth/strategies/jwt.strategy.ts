@@ -9,7 +9,10 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   constructor(private configService: ConfigService) {
     const region = configService.get<string>('cognito.region');
     const userPoolId = configService.get<string>('cognito.userPoolId');
-    const authority = `https://cognito-idp.${region}.amazonaws.com/${userPoolId}`;
+    const endpoint = configService.get<string>('cognito.endpoint');
+    const authority = endpoint
+      ? `${endpoint.replace(/\/+$/, '')}/${userPoolId}`
+      : `https://cognito-idp.${region}.amazonaws.com/${userPoolId}`;
 
     super({
       secretOrKeyProvider: passportJwtSecret({
