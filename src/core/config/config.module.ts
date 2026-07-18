@@ -12,6 +12,7 @@ import { LoggerModule } from 'nestjs-pino';
   imports: [
     NestConfigModule.forRoot({
       envFilePath: [
+        '.env.local.docker',
         '.env.local',
         '.env.development.local',
         '.env.production.local',
