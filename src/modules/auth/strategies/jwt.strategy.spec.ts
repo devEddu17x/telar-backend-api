@@ -5,6 +5,7 @@ jest.mock('jwks-rsa', () => ({
   passportJwtSecret: jest.fn(() => 'test-secret-provider'),
 }));
 
+import { passportJwtSecret } from 'jwks-rsa';
 import { JwtStrategy } from './jwt.strategy';
 
 describe('JwtStrategy', () => {
@@ -12,6 +13,7 @@ describe('JwtStrategy', () => {
   let configService: { get: jest.Mock };
 
   beforeEach(() => {
+    jest.clearAllMocks();
     configService = {
       get: jest.fn((key: string) => {
         const values: Record<string, string> = {
@@ -24,6 +26,26 @@ describe('JwtStrategy', () => {
     };
 
     strategy = new JwtStrategy(configService as unknown as ConfigService);
+  });
+
+  it('uses the configured Cognito endpoint for local token validation', () => {
+    configService.get.mockImplementation((key: string) => {
+      const values: Record<string, string> = {
+        'cognito.region': 'us-east-1',
+        'cognito.userPoolId': 'local_pool',
+        'cognito.clientId': 'client-123',
+        'cognito.endpoint': 'http://localhost:9229/',
+      };
+      return values[key];
+    });
+
+    new JwtStrategy(configService as unknown as ConfigService);
+
+    expect(passportJwtSecret).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        jwksUri: 'http://localhost:9229/local_pool/.well-known/jwks.json',
+      }),
+    );
   });
 
   describe('validate', () => {

@@ -9,14 +9,18 @@ import {
   IsString,
   IsUUID,
   Max,
+  MaxLength,
   Min,
+  MinLength,
   ValidateNested,
 } from 'class-validator';
 
 export class CustomizationDTO {
   @IsOptional()
   @IsString()
-  name?: string;
+  @MinLength(1, { message: 'Name must be at least 1 character long' })
+  @MaxLength(100, { message: 'Name must be at most 100 characters long' })
+  name: string;
 
   @IsOptional()
   @IsNumber()
@@ -26,6 +30,8 @@ export class CustomizationDTO {
 
   @IsOptional()
   @IsString()
+  @MinLength(1, { message: 'Name must be at least 1 character long' })
+  @MaxLength(1024, { message: 'Name must be at most 1024 characters long' })
   notes?: string;
 }
 
