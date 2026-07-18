@@ -5,6 +5,7 @@ import {
   IsString,
   IsUUID,
   MaxLength,
+  MinLength,
   ValidateNested,
 } from 'class-validator';
 import { IsValidDeliveryDate } from '../validators/delivery-date.validator';
@@ -12,22 +13,26 @@ import { IsValidDeliveryDate } from '../validators/delivery-date.validator';
 export class AddressDTO {
   @IsNotEmpty()
   @IsString()
-  @MaxLength(100)
+  @MinLength(1, { message: 'Department must be at least 1 character long' })
+  @MaxLength(100, { message: 'Department must be at most 100 characters long' })
   department: string;
 
   @IsNotEmpty()
   @IsString()
-  @MaxLength(100)
+  @MinLength(1, { message: 'City must be at least 1 character long' })
+  @MaxLength(100, { message: 'City must be at most 100 characters long' })
   city: string;
 
   @IsNotEmpty()
   @IsString()
-  @MaxLength(100)
+  @MinLength(1, { message: 'District must be at least 1 character long' })
+  @MaxLength(100, { message: 'District must be at most 100 characters long' })
   district: string;
 
   @IsNotEmpty()
   @IsString()
-  @MaxLength(255)
+  @MinLength(1, { message: 'Street must be at least 1 character long' })
+  @MaxLength(255, { message: 'Street must be at most 255 characters long' })
   street: string;
 }
 
