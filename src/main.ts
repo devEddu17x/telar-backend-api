@@ -8,7 +8,8 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, { bufferLogs: true });
 
-  app.useLogger(app.get(Logger));
+  const logger = app.get(Logger);
+  app.useLogger(logger);
   const configService = app.get(ConfigService);
   app.enableCors();
   app.setGlobalPrefix(configService.get('api').prefix);
@@ -37,7 +38,7 @@ async function bootstrap() {
   });
 
   const PORT = configService.get('api').port;
-  console.log(`Starting server on port ${PORT}...`);
   await app.listen(PORT);
+  logger.log(`App is listening on port ${PORT}`);
 }
 bootstrap();
