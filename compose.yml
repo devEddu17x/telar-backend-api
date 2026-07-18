@@ -1,19 +1,75 @@
 services:
-  app_db:
-    image: 'postgres:16-alpine'
-    env_file:
-      - .env.local
+  telar_app_db:
+    image: postgres:16-alpine
     environment:
-      POSTGRES_USER: '${DB_USERNAME:-app_user}'
-      POSTGRES_PASSWORD: '${DB_PASSWORD:-app_password}'
-      POSTGRES_DB: '${DB_NAME:-app_db}'
+      POSTGRES_USER: telar_app_user
+      POSTGRES_PASSWORD: telar_app_password
+      POSTGRES_DB: telar_local
     ports:
-      - '${DB_PORT:-5432}:5432'
-    networks:
-      - app_network
+      - '5433:5432'
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U telar_app_user -d telar_local']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: 'no'
+    volumes:
+      - telar_app_db_data:/var/lib/postgresql/data
+
+  telar_app_s3:
+    image: adobe/s3mock:4.10.0
+    ports:
+      - '9090:9090'
+    environment:
+      initialBuckets: telar-local-assets
+      root: /data
+      retainFilesOnExit: 'true'
+    restart: 'no'
+    volumes:
+      - telar_app_s3_data:/data
+
+  telar_app_cognito:
+    image: jagregory/cognito-local:5.3.0
+    entrypoint:
+      - /bin/sh
+      - -c
+      - |
+        printf '%s\n' '{"TokenConfig":{"IssuerDomain":"http://localhost:9229"}}' > /app/.cognito/config.json
+        exec node /app/start.js
+    ports:
+      - '9229:9229'
+    restart: 'no'
+    environment:
+      CODE: '123456'
+    volumes:
+      - telar_app_cognito_data:/app/.cognito
+    healthcheck:
+      test:
+        [
+          'CMD-SHELL',
+          'node -e "require(''http'').get(''http://127.0.0.1:9229'', () => process.exit(0)).on(''error'', () => process.exit(1))"',
+        ]
+      interval: 2s
+      timeout: 2s
+      retries: 15
+
+  telar_app_cognito_init:
+    image: node:22-alpine
+    user: '1000:1000'
+    working_dir: /workspace
+    command: corepack pnpm exec ts-node scripts/cognito-local-bootstrap.ts
+    environment:
+      COGNITO_BOOTSTRAP_ENDPOINT: http://telar_app_cognito:9229
+      LOCAL_COGNITO_ENDPOINT: http://localhost:9229
+      LOCAL_ENV_FILE: .env.local.docker
+    volumes:
+      - ./:/workspace
+    depends_on:
+      telar_app_cognito:
+        condition: service_healthy
     restart: 'no'
 
-networks:
-  app_network:
-    name: textile_app_network
-    driver: bridge
+volumes:
+  telar_app_db_data:
+  telar_app_s3_data:
+  telar_app_cognito_data:
