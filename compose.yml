@@ -1,3 +1,5 @@
+name: telar-local
+
 services:
   telar_app_db:
     image: postgres:16-alpine
